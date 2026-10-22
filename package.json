@@ -1,0 +1,24 @@
+{
+  "name": "unicollab-backend",
+  "version": "1.0.0",
+  "description": "Backend for UniCollab with HTTPS support",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file=.env server.js",
+    "test": "node tests/syntax.cjs",
+    "test:browser": "node tests/browser.cjs",
+    "demo:init": "node scripts/demo.cjs init",
+    "demo:db": "node scripts/demo.cjs start",
+    "demo:stop": "node scripts/demo.cjs stop"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "mysql2": "3.14.1"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  }
+}

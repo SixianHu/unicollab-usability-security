@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Create New Project (Step 1)</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="np-page">
+      <section class="np-modal" aria-label="Create new project wizard page 1">
+        <div class="np-modal-header">
+          <div class="np-modal-title">Creating A New Group Project</div>
+          <button id="npCloseX" class="np-close-x" type="button" aria-label="Close">
+            X
+          </button>
+        </div>
+
+        <div class="np-stepbar" aria-label="Wizard steps">
+          <div class="np-step">
+            <div class="np-step-dot active"></div>
+            <div class="np-step-label">Basic Info</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot"></div>
+            <div class="np-step-label">Add Member</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot"></div>
+            <div class="np-step-label">Assign Tasks</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot"></div>
+            <div class="np-step-label">Confirmation</div>
+          </div>
+        </div>
+
+        <div class="np-step-content">
+          <div class="np-field">
+            <label for="npGroupName" class="np-label">
+              Group Name<span class="np-req">*</span>
+            </label>
+            <input
+              id="npGroupName"
+              class="np-input"
+              type="text"
+              placeholder="Group name"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="np-field">
+            <label for="npProjectContent" class="np-label">Project Content</label>
+            <textarea
+              id="npProjectContent"
+              class="np-textarea"
+              placeholder="Optional project content"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="np-bottom-actions">
+          <button id="npBackBtn" class="np-secondary-btn" type="button">
+            Back
+          </button>
+          <button id="npNextBtn" class="np-primary-btn" type="button">
+            Next
+          </button>
+        </div>
+      </section>
+
+      <div id="npRequiredError" class="np-required-error" hidden>
+        Please complete the required fields to proceed to the next step.
+      </div>
+    </div>
+
+    <!-- Save/Delete confirmation -->
+    <div id="npConfirmOverlay" class="np-confirm-overlay" hidden>
+      <div class="np-confirm-modal" role="dialog" aria-modal="true">
+        <div class="np-confirm-title">Do you want to save or delete this group project?</div>
+        <div class="np-confirm-actions">
+          <button id="npSaveBtn" class="np-primary-btn" type="button">Save</button>
+          <button id="npDeleteBtn" class="np-danger-btn" type="button">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete confirmation (second prompt) -->
+    <div id="npDeleteGroupConfirmOverlay" class="np-confirm-overlay" hidden>
+      <div class="np-confirm-modal" role="dialog" aria-modal="true">
+        <div class="np-confirm-title">Are you sure you want to delete this group?</div>
+        <div class="np-confirm-actions">
+          <button id="npDeleteGroupYesBtn" class="np-danger-btn" type="button">
+            Yes
+          </button>
+          <button id="npDeleteGroupNoBtn" class="np-secondary-btn" type="button">
+            No
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "unicollab_projects";
+
+      function loadProjects() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveProjects(nextProjects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextProjects));
+      }
+
+      function genProjectId() {
+        return `gp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const continueMode = params.get("continue") === "1";
+      const incomingProjectId = params.get("projectId");
+      const incomingStep = Number(params.get("step") || "1");
+
+      const groupNameInput = document.getElementById("npGroupName");
+      const projectContentInput = document.getElementById("npProjectContent");
+      const requiredErrorEl = document.getElementById("npRequiredError");
+
+      const closeXBtn = document.getElementById("npCloseX");
+      const backBtn = document.getElementById("npBackBtn");
+      const nextBtn = document.getElementById("npNextBtn");
+
+      const confirmOverlay = document.getElementById("npConfirmOverlay");
+      const saveBtn = document.getElementById("npSaveBtn");
+      const deleteBtn = document.getElementById("npDeleteBtn");
+      const deleteGroupConfirmOverlay = document.getElementById(
+        "npDeleteGroupConfirmOverlay"
+      );
+      const deleteGroupYesBtn = document.getElementById("npDeleteGroupYesBtn");
+      const deleteGroupNoBtn = document.getElementById("npDeleteGroupNoBtn");
+
+      const storedName = localStorage.getItem("unicollab_fullName") || "Student";
+      const storedSid = localStorage.getItem("unicollab_studentId") || "";
+
+      let projects = loadProjects();
+      let editingProjectId = null;
+
+      if (continueMode && incomingProjectId) {
+        const p = projects.find((x) => x.id === incomingProjectId);
+        if (p) {
+          editingProjectId = p.id;
+          groupNameInput.value = p.name || "";
+          projectContentInput.value = p.projectContent || "";
+          // Step1 page only; if user comes with a different step, we still show Step1 fields.
+        }
+      }
+
+      // Continuation: if the project was last saved at a later step,
+      // route user to that step page.
+      if (continueMode && incomingProjectId) {
+        if (incomingStep === 2) {
+          window.location.href = `./create-project-step2.html?continue=1&projectId=${encodeURIComponent(
+            incomingProjectId
+          )}&step=2`;
+        } else if (incomingStep >= 4) {
+          window.location.href = `./create-project-confirmation.html?continue=1&projectId=${encodeURIComponent(
+            incomingProjectId
+          )}&step=4`;
+        } else if (incomingStep >= 3) {
+          window.location.href = `./create-project-step3.html?continue=1&projectId=${encodeURIComponent(
+            incomingProjectId
+          )}&step=3`;
+        }
+      }
+
+      function showRequiredError(message) {
+        requiredErrorEl.textContent = message;
+        requiredErrorEl.hidden = false;
+      }
+
+      function hideRequiredError() {
+        requiredErrorEl.hidden = true;
+      }
+
+      function openConfirm() {
+        confirmOverlay.hidden = false;
+        hideRequiredError();
+      }
+
+      function closeConfirm() {
+        confirmOverlay.hidden = true;
+      }
+
+      function currentProject() {
+        return editingProjectId
+          ? projects.find((p) => p.id === editingProjectId) || null
+          : null;
+      }
+
+      function upsertPendingProject({ draftStep }) {
+        const groupName = groupNameInput.value.trim();
+        const projectContent = projectContentInput.value.trim();
+
+        if (!groupName) return null;
+
+        const existing = currentProject();
+        const id = existing ? existing.id : genProjectId();
+
+        const nextProject = {
+          id,
+          name: groupName,
+          status: "pending",
+          courseName: existing?.courseName || "INFO 2022",
+          leaderFullName: existing?.leaderFullName || storedName,
+          membersCount: existing?.membersCount || 1,
+          members: existing?.members,
+          projectContent,
+          draftStep,
+          leaderStudentId: existing?.leaderStudentId || storedSid,
+          // User who started the wizard (may differ from leader)
+          creatorStudentId: existing?.creatorStudentId || storedSid,
+        };
+
+        if (existing) {
+          projects = projects.map((p) => (p.id === id ? nextProject : p));
+        } else {
+          projects = [nextProject, ...projects];
+        }
+
+        editingProjectId = id;
+        saveProjects(projects);
+        return nextProject;
+      }
+
+      closeXBtn.addEventListener("click", function () {
+        openConfirm();
+      });
+      backBtn.addEventListener("click", function () {
+        openConfirm();
+      });
+
+      // Click Save: store as pending project and appear on dashboard.
+      saveBtn.addEventListener("click", function () {
+        const groupName = groupNameInput.value.trim();
+        if (!groupName) {
+          showRequiredError("Group Name is required.");
+          return;
+        }
+
+        upsertPendingProject({ draftStep: 1 });
+        closeConfirm();
+        window.location.href = "./dashboard.html";
+      });
+
+      // Click Delete: remove pending draft if exists.
+      deleteBtn.addEventListener("click", function () {
+        // Second prompt before deletion.
+        closeConfirm();
+        deleteGroupConfirmOverlay.hidden = false;
+      });
+
+      confirmOverlay.addEventListener("click", function (e) {
+        if (e.target === confirmOverlay) closeConfirm();
+      });
+
+      deleteGroupConfirmOverlay.addEventListener("click", function (e) {
+        if (e.target === deleteGroupConfirmOverlay) {
+          deleteGroupConfirmOverlay.hidden = true;
+          openConfirm();
+        }
+      });
+
+      deleteGroupNoBtn.addEventListener("click", function () {
+        deleteGroupConfirmOverlay.hidden = true;
+        openConfirm();
+      });
+
+      deleteGroupYesBtn.addEventListener("click", function () {
+        if (editingProjectId) {
+          projects = projects.filter((p) => p.id !== editingProjectId);
+          saveProjects(projects);
+        }
+        deleteGroupConfirmOverlay.hidden = true;
+        window.location.href = "./dashboard.html";
+      });
+
+      nextBtn.addEventListener("click", function () {
+        const groupName = groupNameInput.value.trim();
+        hideRequiredError();
+
+        if (!groupName) {
+          showRequiredError("Group Name is required. You cannot proceed to the next step.");
+          return;
+        }
+
+        const saved = upsertPendingProject({ draftStep: 2 });
+        const id = saved ? saved.id : editingProjectId;
+
+        window.location.href = `./create-project-step2.html?continue=1&projectId=${encodeURIComponent(
+          id
+        )}&step=2`;
+      });
+    </script>
+    <script>
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>
+

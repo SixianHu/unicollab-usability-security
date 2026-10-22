@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Dashboard</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="dash-page">
+      <header class="dash-topbar">
+        <div class="dash-brand">UniCollab</div>
+
+        <div class="dash-user-meta" aria-label="User identity">
+          <div class="dash-meta-line">
+            <span class="dash-meta-label">Name</span>
+            <span id="dashUserName" class="dash-meta-value">--</span>
+          </div>
+          <div class="dash-meta-line">
+            <span class="dash-meta-label">SID</span>
+            <span id="dashUserSid" class="dash-meta-value">--</span>
+          </div>
+        </div>
+
+        <div class="dash-top-actions">
+          <a class="dash-gear-btn" href="./settings.html" aria-label="Settings"
+            >⚙</a
+          >
+          <button id="dashLogoutBtn" class="dash-logout-btn" type="button">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <div class="dash-body">
+        <div class="dash-header">
+          <h2 class="dash-heading">My Project</h2>
+
+          <div class="dash-controls">
+            <div class="dash-tabs" role="tablist" aria-label="Project filters">
+              <button
+                class="dash-tab is-active"
+                data-filter="all"
+                type="button"
+              >
+                All Project
+              </button>
+              <button class="dash-tab" data-filter="active" type="button">
+                Active
+              </button>
+              <button class="dash-tab" data-filter="pending" type="button">
+                Pending
+              </button>
+              <button class="dash-tab" data-filter="archived" type="button">
+                Archived
+              </button>
+            </div>
+
+            <a class="create-project-btn" href="./create-project.html"
+              >+ Create New Project</a
+            >
+          </div>
+        </div>
+
+        <div class="project-shell">
+          <div id="projectArea" class="project-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const userNameEl = document.getElementById("dashUserName");
+      const userSidEl = document.getElementById("dashUserSid");
+      const logoutBtn = document.getElementById("dashLogoutBtn");
+      const projectArea = document.getElementById("projectArea");
+
+      const tabs = Array.from(document.querySelectorAll(".dash-tab"));
+
+      const STORAGE_KEY = "unicollab_projects";
+      const READS_KEY = "unicollab_chat_reads";
+
+      function loadChatReads() {
+        try {
+          const raw = localStorage.getItem(READS_KEY);
+          if (!raw) return {};
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function getProjectChatUnreadCount(project, userSid) {
+        const sid = String(userSid || "").trim();
+        if (!sid || !project) return 0;
+        const chat = project.chat;
+        if (!chat || typeof chat !== "object") return 0;
+        const group = Array.isArray(chat.group) ? chat.group : [];
+        const privateObj =
+          chat.private && typeof chat.private === "object" ? chat.private : {};
+
+        const reads = loadChatReads();
+        const projReads = reads[sid]?.[project.id] || { group: 0, private: {} };
+        const groupRead =
+          typeof projReads.group === "number" ? projReads.group : 0;
+        let total = Math.max(0, group.length - groupRead);
+
+        const privateReads = projReads.private || {};
+        for (const [key, msgs] of Object.entries(privateObj)) {
+          const parts = String(key).split("_");
+          if (!parts.includes(sid)) continue;
+          const msgLen = Array.isArray(msgs) ? msgs.length : 0;
+          const last =
+            typeof privateReads[key] === "number" ? privateReads[key] : 0;
+          if (msgLen > last) total += msgLen - last;
+        }
+        return total;
+      }
+
+      const storedName = localStorage.getItem("unicollab_fullName");
+      const storedSid = localStorage.getItem("unicollab_studentId");
+      userNameEl.textContent = storedName ? storedName : "--";
+      userSidEl.textContent = storedSid ? storedSid : "--";
+
+      logoutBtn.addEventListener("click", function () {
+        localStorage.removeItem("unicollab_fullName");
+        localStorage.removeItem("unicollab_studentId");
+        window.location.href = "./login.html";
+      });
+
+      function loadProjects() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw === null) return [];
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveProjects(nextProjects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextProjects));
+      }
+
+      const AUTO_AGREE_LS_KEY = "unicollab_autoAgree";
+
+      function readAutoAgreeMarker() {
+        try {
+          const raw = localStorage.getItem(AUTO_AGREE_LS_KEY);
+          if (!raw) return null;
+          const marker = JSON.parse(raw);
+          return marker && typeof marker === "object" ? marker : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function areAllMembersAgreed(project) {
+        if (
+          !project ||
+          !Array.isArray(project.members) ||
+          !project.members.length
+        )
+          return false;
+
+        const agreementMap = project.groupAgreement || {};
+        const marker = readAutoAgreeMarker();
+
+        return project.members.every((m) => {
+          const sid = String(m.studentId || "");
+          if (!sid) return false;
+          if (agreementMap[sid] === "agree") return true;
+
+          if (
+            marker &&
+            String(marker.projectId) === String(project.id) &&
+            String(marker.sid) === sid
+          ) {
+            return true;
+          }
+
+          return false;
+        });
+      }
+
+      let projects = loadProjects();
+
+      function allowedStatuses(filter) {
+        if (filter === "active") return ["active"];
+        if (filter === "pending") return ["pending"];
+        if (filter === "archived") return ["archived"];
+        // "All Project" shows active + pending only (as required).
+        return ["active", "pending"];
+      }
+
+      /** If members array exists, only roster members see it; legacy rows stay visible */
+      function userCanSeeProject(p, sid) {
+        const s = String(sid || "").trim();
+        if (!p) return false;
+        if (Array.isArray(p.members) && p.members.length > 0) {
+          if (!s) return true;
+          return p.members.some((m) => String(m.studentId) === s);
+        }
+        return true;
+      }
+
+      function renderProjects(filter) {
+        const allowed = allowedStatuses(filter);
+        const visible = projects.filter(
+          (p) =>
+            allowed.includes(p.status) &&
+            userCanSeeProject(p, storedSid)
+        );
+
+        projectArea.innerHTML = "";
+
+        if (visible.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "project-empty";
+          empty.textContent = "No groups joined yet.";
+          projectArea.appendChild(empty);
+          return;
+        }
+
+        visible.forEach((p) => {
+          const card = document.createElement("div");
+          card.className = "project-card";
+          card.dataset.status = p.status;
+          const chatUnread = getProjectChatUnreadCount(p, storedSid);
+          const unreadLabel =
+            chatUnread > 99 ? "99+" : String(Math.max(0, chatUnread));
+
+          card.innerHTML = `
+            <div class="project-top">
+              <div class="project-name">${p.name}</div>
+              <div class="project-status-badge status-badge">${
+                p.status[0].toUpperCase() + p.status.slice(1)
+              }</div>
+            </div>
+
+            <div class="project-line">${p.courseName}</div>
+            <div class="project-line leader">${p.leaderFullName}</div>
+            <div class="project-line members">${p.membersCount} members</div>
+
+            <div class="project-actions">
+              <button class="project-btn delete-btn" type="button" data-id="${p.id}">
+                Delete
+              </button>
+              <button class="project-btn enter-btn" type="button" data-id="${p.id}">
+                Enter Workspace
+              </button>
+            </div>
+            <span class="project-chat-unread-badge" ${
+              chatUnread > 0 ? "" : "hidden"
+            } aria-label="Unread chat messages">${unreadLabel}</span>
+          `;
+
+          // Delete + Enter Workspace handlers.
+          const deleteBtn = card.querySelector(".delete-btn");
+          const enterBtn = card.querySelector(".enter-btn");
+
+          deleteBtn.addEventListener("click", function () {
+            const ok = window.confirm(
+              "Are you sure you want to delete this project?"
+            );
+            if (!ok) return;
+
+            const doubleCheck = window.confirm(
+              "THIS ACTION IS IRREVERSIBLE. Are you REALLY sure you want to delete this project and all its data?"
+            );
+            if (!doubleCheck) return;
+
+            projects = projects.filter((x) => x.id !== p.id);
+            saveProjects(projects);
+            renderProjects(filter);
+          });
+
+          enterBtn.addEventListener("click", function () {
+            if (p.status === "pending") {
+              if ((p.draftStep || 0) >= 4) {
+                if (areAllMembersAgreed(p)) {
+                  p.status = "active";
+                  if (!p.groupAgreement || typeof p.groupAgreement !== "object")
+                    p.groupAgreement = {};
+                  if (storedSid)
+                    p.groupAgreement[String(storedSid)] = "agree";
+                  saveProjects(projects);
+
+                  localStorage.removeItem(AUTO_AGREE_LS_KEY);
+                  localStorage.setItem("unicollab_projectId", p.id);
+                  localStorage.setItem("unicollab_projectName", p.name);
+                  window.location.href = `./workspace.html?projectId=${encodeURIComponent(
+                    p.id
+                  )}&projectName=${encodeURIComponent(p.name)}`;
+                  return;
+                }
+
+                window.location.href = `./group-pending.html?projectId=${encodeURIComponent(
+                  p.id
+                )}&projectName=${encodeURIComponent(p.name)}`;
+                return;
+              }
+
+              const step = p.draftStep || 1;
+              window.location.href = `./create-project.html?continue=1&projectId=${encodeURIComponent(
+                p.id
+              )}&step=${encodeURIComponent(step)}`;
+              return;
+            }
+
+            // Active projects go to workspace.
+            localStorage.setItem("unicollab_projectId", p.id);
+            localStorage.setItem("unicollab_projectName", p.name);
+            window.location.href = `./workspace.html?projectId=${encodeURIComponent(
+              p.id
+            )}&projectName=${encodeURIComponent(p.name)}`;
+          });
+
+          projectArea.appendChild(card);
+        });
+      }
+
+      function setActiveTab(activeFilter) {
+        tabs.forEach((t) => {
+          const isActive = t.dataset.filter === activeFilter;
+          t.classList.toggle("is-active", isActive);
+        });
+      }
+
+      let currentFilter = "all";
+      tabs.forEach((t) => {
+        t.addEventListener("click", function () {
+          currentFilter = t.dataset.filter;
+          setActiveTab(currentFilter);
+          renderProjects(currentFilter);
+        });
+      });
+
+      // On entering the dashboard, show "All Project" first.
+      setActiveTab("all");
+      renderProjects("all");
+
+      window.addEventListener("storage", function (e) {
+        if (e.key === READS_KEY || e.key === STORAGE_KEY) {
+          if (e.key === STORAGE_KEY) {
+            projects = loadProjects();
+          }
+          renderProjects(currentFilter);
+        }
+      });
+    </script>
+    <script>
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>
+

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Confirmation</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="np-page">
+      <section class="np-modal" aria-label="Create new project confirmation page">
+        <div class="np-modal-header">
+          <div class="np-modal-title">Creating A New Group Project</div>
+          <button id="npCloseX4" class="np-close-x" type="button" aria-label="Close">
+            X
+          </button>
+        </div>
+
+        <div class="np-stepbar" aria-label="Wizard steps">
+          <div class="np-step">
+            <div class="np-step-dot done"></div>
+            <div class="np-step-label">Basic Info</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot done"></div>
+            <div class="np-step-label">Add Member</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot done"></div>
+            <div class="np-step-label">Assign Tasks</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot active"></div>
+            <div class="np-step-label">Confirmation</div>
+          </div>
+        </div>
+
+        <div class="np-cf-shell">
+          <div class="np-cf-title">Members</div>
+          <div id="npCfMembersList" class="np-cf-members-list"></div>
+        </div>
+
+        <div class="np-bottom-actions">
+          <button id="npCfBackBtn" class="np-secondary-btn" type="button">
+            Back
+          </button>
+          <button id="npCfConfirmBtn" class="np-primary-btn" type="button">
+            Confirm
+          </button>
+        </div>
+      </section>
+
+      <!-- Close confirm -->
+      <div id="npCfExitOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">Do you want to exit?</div>
+          <div class="np-confirm-actions">
+            <button id="npCfExitYes" class="np-danger-btn" type="button">Yes</button>
+            <button id="npCfExitNo" class="np-secondary-btn" type="button">No</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "unicollab_projects";
+
+      function loadProjects() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          return JSON.parse(raw) || [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveProjects(projects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+      }
+
+      function fmtDdl(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return iso;
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
+          d.getHours()
+        )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const projectId = params.get("projectId");
+      const fromGroupPending = params.get("fromGroupPending") === "1";
+
+      let projects = loadProjects();
+      let project = projects.find((p) => p.id === projectId) || null;
+      if (!project) {
+        window.location.href = "./dashboard.html";
+ throw new Error("navigation_redirect");
+      }
+
+      const sessionSid = localStorage.getItem("unicollab_studentId") || "";
+
+      const membersListEl = document.getElementById("npCfMembersList");
+      const backBtn = document.getElementById("npCfBackBtn");
+      const confirmBtn = document.getElementById("npCfConfirmBtn");
+      const closeX = document.getElementById("npCloseX4");
+      const exitOverlay = document.getElementById("npCfExitOverlay");
+      const exitYes = document.getElementById("npCfExitYes");
+      const exitNo = document.getElementById("npCfExitNo");
+
+      function openOverlay(el) {
+        el.hidden = false;
+      }
+      function closeOverlay(el) {
+        el.hidden = true;
+      }
+
+      /** Logged-in user who confirms/exit-and-finishes is the setup finalizer → auto-agree */
+      function seedGroupAgreementForCompleter() {
+        if (!project.groupAgreement || typeof project.groupAgreement !== "object")
+          project.groupAgreement = {};
+        const fin = String(sessionSid);
+        if (!fin) return;
+        project.creationFinalizerStudentId = fin;
+        project.groupAgreement[fin] = "agree";
+      }
+
+      function renderMembers() {
+        membersListEl.innerHTML = "";
+        const members = Array.isArray(project.members) ? project.members : [];
+        if (!members.length) {
+          const empty = document.createElement("div");
+          empty.className = "np-members-empty";
+          empty.textContent = "No members.";
+          membersListEl.appendChild(empty);
+          return;
+        }
+
+        members.forEach((m) => {
+          const card = document.createElement("div");
+          card.className = "np-cf-member-card";
+
+          const head = document.createElement("div");
+          head.className = "np-cf-member-head";
+          head.textContent = `${m.fullName || "Unknown"} (${m.studentId || ""})`;
+
+          const tasksTitle = document.createElement("div");
+          tasksTitle.className = "np-cf-tasks-title";
+          tasksTitle.textContent = "Tasks";
+
+          const tasksBox = document.createElement("div");
+          tasksBox.className = "np-cf-tasks-box";
+
+          const tasks = Array.isArray(m.tasks) ? m.tasks : [];
+          if (!tasks.length) {
+            const empty = document.createElement("div");
+            empty.className = "np-cf-empty";
+            empty.textContent = "...";
+            tasksBox.appendChild(empty);
+          } else {
+            tasks.forEach((t, idx) => {
+              const taskCard = document.createElement("div");
+              taskCard.className = "np-cf-task-card";
+
+              const indexLine = document.createElement("div");
+              indexLine.className = "np-cf-task-index-line";
+              indexLine.textContent = `${idx + 1}.`;
+
+              const content = document.createElement("div");
+              content.className = "np-cf-task-content-line";
+              const ddlText = t.ddl ? fmtDdl(t.ddl) : "No DDL";
+              content.textContent = `content: ${t.content || t.title || "-"}`;
+
+              const ddl = document.createElement("div");
+              ddl.className = "np-cf-task-ddl-line";
+              ddl.textContent = `DDL: ${ddlText}`;
+
+              const stepsTitle = document.createElement("div");
+              stepsTitle.className = "np-cf-task-steps-title";
+              stepsTitle.textContent = "steps:";
+
+              const stepsWrap = document.createElement("div");
+              stepsWrap.className = "np-cf-task-steps-wrap";
+              const steps = Array.isArray(t.steps) ? t.steps : [];
+              if (!steps.length) {
+                const emptyStep = document.createElement("div");
+                emptyStep.className = "np-cf-task-step-line";
+                emptyStep.textContent = "-";
+                stepsWrap.appendChild(emptyStep);
+              } else {
+                steps.forEach((s, sIdx) => {
+                  const stepLine = document.createElement("div");
+                  stepLine.className = "np-cf-task-step-line";
+                  stepLine.textContent = `step${sIdx + 1}: ${s.content || "-"}`;
+                  stepsWrap.appendChild(stepLine);
+                });
+              }
+
+              taskCard.appendChild(indexLine);
+              taskCard.appendChild(content);
+              taskCard.appendChild(ddl);
+              taskCard.appendChild(stepsTitle);
+              taskCard.appendChild(stepsWrap);
+              tasksBox.appendChild(taskCard);
+            });
+          }
+
+          card.appendChild(head);
+          card.appendChild(tasksTitle);
+          card.appendChild(tasksBox);
+          membersListEl.appendChild(card);
+        });
+      }
+
+      renderMembers();
+
+      if (fromGroupPending) {
+        backBtn.hidden = true;
+        closeX.hidden = true;
+      }
+
+      backBtn.addEventListener("click", function () {
+        if (fromGroupPending) return;
+        window.location.href = `./create-project-step3.html?continue=1&projectId=${encodeURIComponent(
+          project.id
+        )}&step=3`;
+      });
+
+      closeX.addEventListener("click", function () {
+        if (fromGroupPending) return;
+        openOverlay(exitOverlay);
+      });
+
+      exitNo.addEventListener("click", function () {
+        closeOverlay(exitOverlay);
+      });
+
+      exitYes.addEventListener("click", function () {
+        project.status = "pending";
+        project.draftStep = 4;
+        seedGroupAgreementForCompleter();
+        saveProjects(projects);
+        closeOverlay(exitOverlay);
+        window.location.href = "./dashboard.html";
+      });
+
+      confirmBtn.addEventListener("click", function () {
+        if (fromGroupPending) {
+          window.location.href = `./group-pending.html?projectId=${encodeURIComponent(
+            project.id
+          )}`;
+          return;
+        }
+        project.status = "pending";
+        project.draftStep = 4;
+        seedGroupAgreementForCompleter();
+        saveProjects(projects);
+        window.location.href = `./create-project-success.html?projectId=${encodeURIComponent(
+          project.id
+        )}`;
+      });
+
+      // Theme initialization.
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>
+

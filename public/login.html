@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Login</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .login-error {
+        margin-top: 12px;
+        color: #ef4444;
+        font-size: 13px;
+        font-weight: 700;
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0 24px;
+        min-height: 18px; /* reserve space to prevent card jumping */
+        visibility: hidden;
+      }
+
+      .login-error.is-visible {
+        visibility: visible;
+      }
+    </style>
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <main class="page" style="flex-direction: column">
+      <section class="card" aria-label="Login form container">
+        <h1 class="title">UniCollab</h1>
+        <p class="subtitle">university project management system</p>
+
+        <form id="loginForm" class="form" action="#" method="post" autocomplete="on">
+          <div class="field">
+            <label for="studentId" class="label">
+              Student ID<span class="req" aria-hidden="true">*</span>
+            </label>
+            <input
+              id="studentId"
+              name="studentId"
+              type="text"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="password" class="label">
+              Password<span class="req" aria-hidden="true">*</span>
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+            />
+          </div>
+
+          <div class="actions">
+            <button class="login-btn" type="submit">Login</button>
+            <a class="create-account" href="./create-account.html"
+              >create a new account</a
+            >
+          </div>
+        </form>
+      </section>
+
+      <div
+        id="loginError"
+        class="login-error is-hidden"
+        role="alert"
+        aria-live="polite"
+      ></div>
+    </main>
+
+    <script>
+      const loginForm = document.getElementById("loginForm");
+      const studentIdInput = document.getElementById("studentId");
+      const passwordInput = document.getElementById("password");
+      const loginErrorEl = document.getElementById("loginError");
+
+      loginForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const studentId = studentIdInput.value.trim();
+        const password = passwordInput.value;
+
+        loginErrorEl.classList.remove("is-visible");
+        loginErrorEl.textContent = "";
+
+        try {
+          // Call the HTTPS backend for login
+          const response = await fetch("/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ studentId, password }),
+          });
+
+          if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || "Login failed");
+          }
+
+          const result = await response.json();
+          
+          if (result.success) {
+            localStorage.setItem("unicollab_studentId", result.user.studentId);
+            localStorage.setItem("unicollab_fullName", result.user.fullName);
+            localStorage.setItem("unicollab_email", result.user.email);
+            window.location.href = "./dashboard.html";
+          } else {
+            loginErrorEl.textContent = result.message;
+            loginErrorEl.classList.add("is-visible");
+          }
+        } catch (err) {
+          console.error("Login error:", err);
+          // Show backend error when available; keep connection hint for network failures.
+          loginErrorEl.textContent =
+            err && err.message
+              ? err.message
+              : "Unable to connect to HTTPS server. Ensure you have trusted the rootCA.pem and the server is running.";
+          loginErrorEl.classList.add("is-visible");
+        }
+      });
+
+      function hideErrorOnEdit() {
+        loginErrorEl.classList.remove("is-visible");
+        loginErrorEl.textContent = "";
+      }
+
+      studentIdInput.addEventListener("input", hideErrorOnEdit);
+      passwordInput.addEventListener("input", hideErrorOnEdit);
+    </script>
+    <script>
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>
+

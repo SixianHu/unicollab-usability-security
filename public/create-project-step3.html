@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Create New Project (Step 3)</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="np-page">
+      <section class="np-modal" aria-label="Create new project wizard page 3">
+        <div class="np-modal-header">
+          <div class="np-modal-title">Creating A New Group Project</div>
+          <button
+            id="npCloseX3"
+            class="np-close-x"
+            type="button"
+            aria-label="Close"
+          >
+            X
+          </button>
+        </div>
+
+        <div class="np-stepbar" aria-label="Wizard steps">
+          <div class="np-step">
+            <div class="np-step-dot done"></div>
+            <div class="np-step-label">Basic Info</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot done"></div>
+            <div class="np-step-label">Add Member</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot active"></div>
+            <div class="np-step-label">Assign Tasks</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot"></div>
+            <div class="np-step-label">Confirmation</div>
+          </div>
+        </div>
+
+        <div class="np-step2-body">
+          <div class="np-step2-title-row">
+            <div class="np-step2-title">Members</div>
+          </div>
+
+          <div id="npMembersList3" class="np-members-list"></div>
+
+          <div id="npTaskHint3" class="np-task-hint">
+            *Note: Each member must be assigned at least one task.
+          </div>
+        </div>
+
+        <div class="np-bottom-actions">
+          <button id="npStep3BackBtn" class="np-secondary-btn" type="button">
+            Back
+          </button>
+          <button id="npStep3NextBtn" class="np-primary-btn" type="button">
+            Next
+          </button>
+        </div>
+      </section>
+
+      <!-- Close (X) save/delete popup -->
+      <div id="npCloseConfirmOverlay3" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">
+            Do you want to save or delete this group project?
+          </div>
+          <div class="np-confirm-actions">
+            <button
+              id="npCloseSaveBtn3"
+              class="np-primary-btn"
+              type="button"
+            >
+              Save
+            </button>
+            <button
+              id="npCloseDeleteBtn3"
+              class="np-danger-btn"
+              type="button"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Close (X) delete confirmation (second prompt) -->
+      <div
+        id="npCloseDeleteConfirmOverlay3"
+        class="np-confirm-overlay"
+        hidden
+      >
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">
+            Are you sure you want to delete this group?
+          </div>
+          <div class="np-confirm-actions">
+            <button
+              id="npCloseDeleteYesBtn3"
+              class="np-danger-btn"
+              type="button"
+            >
+              Yes
+            </button>
+            <button
+              id="npCloseDeleteNoBtn3"
+              class="np-secondary-btn"
+              type="button"
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back save/delete popup for Step 3 -->
+      <div id="npBackConfirmOverlay3" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">
+            Do you want to save or delete all information filled on this page?
+          </div>
+          <div class="np-confirm-actions">
+            <button
+              id="npBackSaveBtn3"
+              class="np-primary-btn"
+              type="button"
+            >
+              Save
+            </button>
+            <button
+              id="npBackDeleteBtn3"
+              class="np-danger-btn"
+              type="button"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back delete confirmation (second prompt) -->
+      <div
+        id="npBackDeleteConfirmOverlay3"
+        class="np-confirm-overlay"
+        hidden
+      >
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">
+            Are you sure you want to delete all information filled on this page?
+          </div>
+          <div class="np-confirm-actions">
+            <button
+              id="npBackDeleteYesBtn3"
+              class="np-danger-btn"
+              type="button"
+            >
+              Yes
+            </button>
+            <button
+              id="npBackDeleteNoBtn3"
+              class="np-secondary-btn"
+              type="button"
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Task missing overlay -->
+      <div
+        id="npTaskMissingOverlay3"
+        class="np-confirm-overlay"
+        hidden
+      >
+        <div class="np-task-missing-modal" role="dialog" aria-modal="true">
+          <div
+            id="npTaskMissingText3"
+            class="np-task-missing-text"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "unicollab_projects";
+
+      function loadProjects() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          return JSON.parse(raw) || [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveProjects(projects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const projectId = params.get("projectId");
+
+      const closeXBtn3 = document.getElementById("npCloseX3");
+      const backBtn3 = document.getElementById("npStep3BackBtn");
+      const nextBtn3 = document.getElementById("npStep3NextBtn");
+
+      const membersListEl3 = document.getElementById("npMembersList3");
+
+      const closeConfirmOverlay3 = document.getElementById(
+        "npCloseConfirmOverlay3"
+      );
+      const closeDeleteConfirmOverlay3 = document.getElementById(
+        "npCloseDeleteConfirmOverlay3"
+      );
+
+      const closeSaveBtn3 = document.getElementById("npCloseSaveBtn3");
+      const closeDeleteBtn3 = document.getElementById("npCloseDeleteBtn3");
+      const closeDeleteYesBtn3 = document.getElementById(
+        "npCloseDeleteYesBtn3"
+      );
+      const closeDeleteNoBtn3 = document.getElementById(
+        "npCloseDeleteNoBtn3"
+      );
+
+      const backConfirmOverlay3 = document.getElementById(
+        "npBackConfirmOverlay3"
+      );
+      const backDeleteConfirmOverlay3 = document.getElementById(
+        "npBackDeleteConfirmOverlay3"
+      );
+      const backSaveBtn3 = document.getElementById("npBackSaveBtn3");
+      const backDeleteBtn3 = document.getElementById("npBackDeleteBtn3");
+      const backDeleteYesBtn3 = document.getElementById(
+        "npBackDeleteYesBtn3"
+      );
+      const backDeleteNoBtn3 = document.getElementById("npBackDeleteNoBtn3");
+
+      const taskMissingOverlay3 = document.getElementById(
+        "npTaskMissingOverlay3"
+      );
+      const taskMissingText3 = document.getElementById("npTaskMissingText3");
+
+      let projects = loadProjects();
+      let project = projects.find((p) => p.id === projectId) || null;
+
+      if (!project) {
+        window.location.href = "./dashboard.html";
+ throw new Error("navigation_redirect");
+      }
+
+      function normalizeProjectMembersForTasks() {
+        if (!Array.isArray(project.members)) project.members = [];
+        project.members = project.members.map((m) => ({
+          ...m,
+          taskCount:
+            Array.isArray(m.tasks)
+              ? m.tasks.filter(
+                  (t) =>
+                    !!t &&
+                    !!t.ddl &&
+                    Array.isArray(t.steps) &&
+                    t.steps.length >= 2 &&
+                    t.stepsConfirmed === true
+                ).length
+              : typeof m.taskCount === "number"
+              ? m.taskCount
+              : 0,
+        }));
+      }
+
+      function renderMembers3() {
+        membersListEl3.innerHTML = "";
+
+        if (!project.members || project.members.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "np-members-empty";
+          empty.textContent = "No members yet.";
+          membersListEl3.appendChild(empty);
+          return;
+        }
+
+        project.members.forEach((m) => {
+          const row = document.createElement("div");
+          row.className = "np-task-member-row";
+
+          const nameBlock = document.createElement("div");
+          nameBlock.className = "np-task-member-name";
+          const fullName = m.fullName || "Unknown";
+          const sid = m.studentId ?? "";
+          nameBlock.textContent = `${fullName} (${sid})`;
+
+          const countEl = document.createElement("div");
+          countEl.className = "np-task-count-badge";
+          const taskCount = typeof m.taskCount === "number" ? m.taskCount : 0;
+          const isGood = (taskCount || 0) >= 1;
+          countEl.classList.add(isGood ? "is-good" : "is-zero");
+          countEl.textContent = `assigned task：${String(taskCount || 0)}`;
+
+          const right = document.createElement("div");
+          right.className = "np-task-member-actions";
+
+          const assignBtn = document.createElement("button");
+          assignBtn.type = "button";
+          assignBtn.className = "np-assign-task-btn";
+          assignBtn.textContent = "Assign";
+
+          assignBtn.addEventListener("click", function () {
+            window.location.href =
+              `./create-project-assign.html?projectId=${encodeURIComponent(
+                project.id
+              )}&memberSid=${encodeURIComponent(String(m.studentId))}`;
+          });
+
+          right.appendChild(assignBtn);
+          row.appendChild(nameBlock);
+          row.appendChild(countEl);
+          row.appendChild(right);
+          membersListEl3.appendChild(row);
+        });
+      }
+
+      function openOverlay(overlay) {
+        overlay.hidden = false;
+      }
+      function closeOverlay(overlay) {
+        overlay.hidden = true;
+      }
+
+      function getFirstMissingMember() {
+        if (!Array.isArray(project.members)) return null;
+        return (
+          project.members.find((m) => (m.taskCount || 0) < 1) || null
+        );
+      }
+
+      function showTaskMissing(member) {
+        const name = member?.fullName || "This member";
+        taskMissingText3.textContent = `${name} has not been assigned a task.`;
+        openOverlay(taskMissingOverlay3);
+      }
+
+      normalizeProjectMembersForTasks();
+      renderMembers3();
+
+      closeXBtn3.addEventListener("click", function () {
+        openOverlay(closeConfirmOverlay3);
+      });
+
+      closeSaveBtn3.addEventListener("click", function () {
+        project.status = "pending";
+        project.draftStep = 3;
+        saveProjects(projects);
+        closeOverlay(closeConfirmOverlay3);
+        window.location.href = "./dashboard.html";
+      });
+
+      closeDeleteBtn3.addEventListener("click", function () {
+        closeOverlay(closeConfirmOverlay3);
+        openOverlay(closeDeleteConfirmOverlay3);
+      });
+
+      closeDeleteYesBtn3.addEventListener("click", function () {
+        projects = projects.filter((p) => p.id !== project.id);
+        saveProjects(projects);
+        closeOverlay(closeDeleteConfirmOverlay3);
+        window.location.href = "./dashboard.html";
+      });
+
+      closeDeleteNoBtn3.addEventListener("click", function () {
+        closeOverlay(closeDeleteConfirmOverlay3);
+        openOverlay(closeConfirmOverlay3);
+      });
+
+      backBtn3.addEventListener("click", function () {
+        openOverlay(backConfirmOverlay3);
+      });
+
+      backSaveBtn3.addEventListener("click", function () {
+        // Save task assignments, then go back to Step 2 UI.
+        project.status = "pending";
+        project.draftStep = 3;
+        saveProjects(projects);
+        closeOverlay(backConfirmOverlay3);
+        window.location.href = `./create-project-step2.html?continue=1&projectId=${encodeURIComponent(
+          project.id
+        )}&step=2`;
+      });
+
+      backDeleteBtn3.addEventListener("click", function () {
+        closeOverlay(backConfirmOverlay3);
+        openOverlay(backDeleteConfirmOverlay3);
+      });
+
+      backDeleteYesBtn3.addEventListener("click", function () {
+        // Delete only the information filled on this page (tasks).
+        if (Array.isArray(project.members)) {
+          project.members = project.members.map((m) => ({
+            ...m,
+            taskCount: 0,
+          }));
+        }
+        project.status = "pending";
+        project.draftStep = 2;
+        saveProjects(projects);
+        closeOverlay(backDeleteConfirmOverlay3);
+        window.location.href = `./create-project-step2.html?continue=1&projectId=${encodeURIComponent(
+          project.id
+        )}&step=2`;
+      });
+
+      backDeleteNoBtn3.addEventListener("click", function () {
+        closeOverlay(backDeleteConfirmOverlay3);
+        openOverlay(backConfirmOverlay3);
+      });
+
+      nextBtn3.addEventListener("click", function () {
+        normalizeProjectMembersForTasks();
+
+        const missing = getFirstMissingMember();
+        if (missing) {
+          showTaskMissing(missing);
+          return;
+        }
+
+        // Move to confirmation stage and keep as pending until final confirm page completes.
+        project.status = "pending";
+        project.draftStep = 4;
+        saveProjects(projects);
+        window.location.href = `./create-project-confirmation.html?projectId=${encodeURIComponent(
+          project.id
+        )}`;
+      });
+
+      taskMissingOverlay3.addEventListener("click", function (e) {
+        if (e.target === taskMissingOverlay3) closeOverlay(taskMissingOverlay3);
+      });
+
+      // Theme init
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>
+

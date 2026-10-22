@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Settings</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      /* Settings page-only styles (kept inside this file to avoid touching other pages). */
+      .settings-user {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .settings-user-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        padding: 4px 0;
+        border-bottom: 1px dashed rgba(229, 231, 235, 0.95);
+      }
+
+      .settings-user-row:last-child {
+        border-bottom: none;
+      }
+
+      .settings-user-label {
+        font-weight: 800;
+        color: #6b7280;
+      }
+
+      .settings-user-value {
+        font-weight: 900;
+        color: #111827;
+        text-align: right;
+        word-break: break-word;
+      }
+
+      .settings-edit-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        padding: 4px 0;
+        border-bottom: 1px dashed rgba(229, 231, 235, 0.95);
+      }
+
+      .settings-edit-row:last-child {
+        border-bottom: none;
+      }
+
+      .settings-input {
+        height: 44px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        padding: 0 14px;
+        font-size: 14px;
+        outline: none;
+        width: 60%;
+        min-width: 200px;
+        text-align: right;
+        background: #ffffff;
+      }
+
+      .settings-input:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
+      }
+
+      .settings-input[disabled] {
+        background: #f3f4f6;
+        color: #6b7280;
+      }
+
+      .settings-theme {
+        margin-top: 6px;
+        margin-bottom: 16px;
+      }
+
+      .settings-theme-title {
+        font-weight: 900;
+        color: #111827;
+        margin-bottom: 10px;
+      }
+
+      .settings-theme-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .settings-theme-btn {
+        height: 44px;
+        border-radius: 12px;
+        border: 1px solid rgba(79, 70, 229, 0.18);
+        background: rgba(79, 70, 229, 0.08);
+        color: #4f46e5;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .settings-theme-btn.is-active {
+        background: rgba(79, 70, 229, 0.18);
+        border-color: rgba(79, 70, 229, 0.45);
+      }
+
+      /* Dashboard return button: remove underline + improve centering. */
+      .dash-placeholder-actions .login-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        line-height: 1;
+        text-align: center;
+      }
+
+      .dash-placeholder-actions .login-btn:hover {
+        text-decoration: none;
+      }
+
+      /* Night mode overrides (scoped to this page via dataset). */
+      body[data-theme="night"] {
+        background: #0b1220;
+        color: #e5e7eb;
+      }
+
+      body[data-theme="night"] .card {
+        background: #0f172a;
+        box-shadow: 0 16px 45px rgba(0, 0, 0, 0.35);
+      }
+
+      body[data-theme="night"] .title {
+        color: #818cf8; /* keep it close to existing primary color */
+      }
+
+      body[data-theme="night"] .subtitle {
+        color: #a1a1aa;
+      }
+
+      body[data-theme="night"] .settings-user-label {
+        color: #9ca3af;
+      }
+
+      body[data-theme="night"] .settings-user-value {
+        color: #e5e7eb;
+      }
+
+      body[data-theme="night"] .settings-input {
+        background: #0b1220;
+        color: #e5e7eb;
+        border-color: rgba(148, 163, 184, 0.25);
+      }
+
+      body[data-theme="night"] .settings-input:focus {
+        border-color: rgba(129, 140, 248, 0.7);
+        box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.22);
+      }
+
+      body[data-theme="night"] .settings-input[disabled] {
+        background: #0f172a;
+        color: #9ca3af;
+      }
+
+      body[data-theme="night"] .settings-theme-title {
+        color: #e5e7eb;
+      }
+
+      body[data-theme="night"] .settings-theme-btn {
+        background: rgba(129, 140, 248, 0.12);
+        border-color: rgba(129, 140, 248, 0.35);
+        color: #c7d2fe;
+      }
+
+      body[data-theme="night"] .settings-theme-btn.is-active {
+        background: rgba(129, 140, 248, 0.25);
+        border-color: rgba(129, 140, 248, 0.65);
+      }
+    </style>
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <main class="page">
+      <section class="card" aria-label="Settings placeholder">
+        <h1 class="title">Settings</h1>
+        <p class="subtitle" style="margin-bottom: 18px">
+          your account details and appearance
+        </p>
+
+        <div class="settings-user" role="group" aria-label="Account details">
+          <div class="settings-edit-row">
+            <span class="settings-user-label">Full Name</span>
+            <input
+              id="setUserNameInput"
+              class="settings-input"
+              type="text"
+              autocomplete="name"
+            />
+          </div>
+          <div class="settings-edit-row">
+            <span class="settings-user-label">Student ID</span>
+            <input
+              id="setUserSidInput"
+              class="settings-input"
+              type="text"
+              disabled
+            />
+          </div>
+          <div class="settings-edit-row">
+            <span class="settings-user-label">Email</span>
+            <input
+              id="setUserEmailInput"
+              class="settings-input"
+              type="email"
+              autocomplete="email"
+            />
+          </div>
+        </div>
+
+        <div class="settings-theme" role="group" aria-label="Theme settings">
+          <div class="settings-theme-title">Theme</div>
+          <div class="settings-theme-toggle">
+            <button
+              id="setThemeDayBtn"
+              class="settings-theme-btn is-active"
+              type="button"
+              aria-pressed="true"
+            >
+              Day mode
+            </button>
+            <button
+              id="setThemeNightBtn"
+              class="settings-theme-btn"
+              type="button"
+              aria-pressed="false"
+            >
+              Night mode
+            </button>
+          </div>
+        </div>
+
+        <div class="dash-placeholder-actions">
+          <a class="login-btn" href="./dashboard.html">Back to Dashboard</a>
+        </div>
+
+        <div class="dash-placeholder-actions" style="margin-top: 14px">
+          <button id="setSaveBtn" class="login-btn" type="button" style="border: none">
+            Save
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const userNameInput = document.getElementById("setUserNameInput");
+      const userSidInput = document.getElementById("setUserSidInput");
+      const userEmailInput = document.getElementById("setUserEmailInput");
+
+      const dayBtn = document.getElementById("setThemeDayBtn");
+      const nightBtn = document.getElementById("setThemeNightBtn");
+
+      // Identity from previous steps.
+      const storedName = localStorage.getItem("unicollab_fullName") || "--";
+      const storedSid = localStorage.getItem("unicollab_studentId") || "--";
+      const storedEmail = localStorage.getItem("unicollab_email");
+
+      userNameInput.value = storedName === "--" ? "" : storedName;
+      userSidInput.value = storedSid;
+      userEmailInput.value = storedEmail ? storedEmail : "";
+
+      function applyTheme(theme) {
+        document.body.dataset.theme = theme;
+
+        const isNight = theme === "night";
+        dayBtn.classList.toggle("is-active", !isNight);
+        nightBtn.classList.toggle("is-active", isNight);
+
+        dayBtn.setAttribute("aria-pressed", String(!isNight));
+        nightBtn.setAttribute("aria-pressed", String(isNight));
+      }
+
+      dayBtn.addEventListener("click", function () {
+        localStorage.setItem("unicollab_theme", "day");
+        applyTheme("day");
+      });
+
+      nightBtn.addEventListener("click", function () {
+        localStorage.setItem("unicollab_theme", "night");
+        applyTheme("night");
+      });
+
+      // Save edited profile: update accounts record (keyed by SID),
+      // sync singleton keys, and also update project leader/member display.
+      const setSaveBtn = document.getElementById("setSaveBtn");
+      setSaveBtn.addEventListener("click", function () {
+        const sid = localStorage.getItem("unicollab_studentId") || "";
+        if (!sid || sid === "--") return;
+
+        const nextFullName = userNameInput.value.trim();
+        const nextEmail = userEmailInput.value.trim();
+
+        // Update singletons.
+        localStorage.setItem("unicollab_fullName", nextFullName || "");
+        localStorage.setItem("unicollab_email", nextEmail || "");
+
+        // Update accounts array by SID.
+        try {
+          const raw = localStorage.getItem("unicollab_accounts");
+          const parsed = raw ? JSON.parse(raw) : [];
+          const accounts = Array.isArray(parsed) ? parsed : [];
+
+          const idx = accounts.findIndex(
+            (a) => String(a.studentId || a.sid || "").trim() === String(sid)
+          );
+          if (idx >= 0) {
+            accounts[idx] = {
+              ...accounts[idx],
+              fullName: nextFullName || accounts[idx].fullName,
+              email: nextEmail || accounts[idx].email,
+            };
+          } else {
+            // If missing, create a minimal record (password unknown in this UI).
+            accounts.push({
+              studentId: sid,
+              fullName: nextFullName || "",
+              email: nextEmail || "",
+              password: accounts[0]?.password || "",
+            });
+          }
+          localStorage.setItem("unicollab_accounts", JSON.stringify(accounts));
+        } catch (e) {}
+
+        // Also update unicollab_users (legacy member validation / backups).
+        try {
+          const raw = localStorage.getItem("unicollab_users");
+          const parsed = raw ? JSON.parse(raw) : [];
+          const users = Array.isArray(parsed) ? parsed : [];
+          const idx = users.findIndex(
+            (u) => String(u.studentId).trim() === String(sid)
+          );
+          if (idx >= 0) {
+            users[idx] = { ...users[idx], fullName: nextFullName || users[idx].fullName };
+          }
+          localStorage.setItem("unicollab_users", JSON.stringify(users));
+        } catch (e) {}
+
+        // Update all projects' leader/member display fields for this SID.
+        try {
+          const projectsRaw = localStorage.getItem("unicollab_projects");
+          const parsed = projectsRaw ? JSON.parse(projectsRaw) : [];
+          const projects = Array.isArray(parsed) ? parsed : [];
+
+          const updated = projects.map((p) => {
+            const leaderMatch = String(p.leaderStudentId || "").trim() === String(sid);
+
+            let nextProject = { ...p };
+            if (leaderMatch) {
+              nextProject.leaderFullName = nextFullName || p.leaderFullName;
+            }
+
+            if (Array.isArray(nextProject.members)) {
+              nextProject.members = nextProject.members.map((m) => {
+                if (String(m.studentId).trim() !== String(sid)) return m;
+                return { ...m, fullName: nextFullName || m.fullName };
+              });
+            }
+
+            // Keep leaderFullName consistent if leader is stored inside members.
+            if (Array.isArray(nextProject.members)) {
+              const leader = nextProject.members.find((m) => m.role === "leader");
+              if (leader) nextProject.leaderFullName = leader.fullName || nextProject.leaderFullName;
+            }
+
+            return nextProject;
+          });
+
+          localStorage.setItem("unicollab_projects", JSON.stringify(updated));
+        } catch (e) {}
+
+        alert("Saved (demo).");
+      });
+
+      // Initialize theme.
+      const storedTheme = localStorage.getItem("unicollab_theme") || "day";
+      applyTheme(storedTheme);
+    </script>
+  </body>
+</html>
+

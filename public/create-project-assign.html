@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Assigning Details</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="np-page">
+      <section class="np-modal np-assign-modal" aria-label="Assigning details">
+        <div class="np-assign-header">
+          <button
+            id="npAssignBackArrow"
+            class="np-assign-back"
+            type="button"
+            aria-label="Back"
+          >
+            ←
+          </button>
+          <div class="np-assign-title">Assigning details</div>
+          <div class="np-assign-header-spacer"></div>
+        </div>
+
+        <div id="npAssignSubtitle" class="np-assign-subtitle"></div>
+
+        <div class="np-assign-grid">
+          <button id="npAddTaskBtn" class="np-assign-add-task" type="button">
+            + Add task
+          </button>
+
+          <div class="np-assign-right">
+            <div class="np-assign-current-title">Current tasks</div>
+            <div id="npCurrentTasks" class="np-assign-tasks"></div>
+          </div>
+        </div>
+
+        <div class="np-assign-note">
+          * At least 1 task should be added. Each task must add its DDL &amp;
+          Steps.
+        </div>
+
+        <div class="np-assign-bottom">
+          <button id="npAssignCompleteBtn" class="np-primary-btn" type="button">
+            Complete
+          </button>
+        </div>
+      </section>
+
+      <!-- Back warning popup -->
+      <div id="npAssignBackWarnOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">
+            Task assignment is not completed. Going back will result in loss of
+            the entered content. Do you want to go back?
+          </div>
+          <div class="np-confirm-actions">
+            <button id="npAssignBackYes" class="np-danger-btn" type="button">
+              Yes
+            </button>
+            <button
+              id="npAssignBackNo"
+              class="np-secondary-btn"
+              type="button"
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add task popup -->
+      <div id="npAddTaskOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal np-assign-form-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title" id="npAddTaskModalTitle">Add task</div>
+          <div class="np-field">
+            <label class="np-label" for="npTaskTitleInput">
+              Task title <span class="np-req">*</span>
+            </label>
+            <input id="npTaskTitleInput" class="np-input" type="text" />
+          </div>
+          <div class="np-field">
+            <label class="np-label" for="npTaskContentInput">
+              Task content <span class="np-req">*</span>
+            </label>
+            <textarea id="npTaskContentInput" class="np-textarea"></textarea>
+          </div>
+
+          <div id="npAddTaskModifyExtras" class="np-add-task-modify-extras" hidden>
+            <div class="np-field">
+              <label class="np-label" for="npModifyTaskDdlInput">DDL</label>
+              <input
+                id="npModifyTaskDdlInput"
+                class="np-input"
+                type="datetime-local"
+                step="1"
+              />
+              <div class="np-assign-ddl-hint">
+                Optional while editing; a complete task still needs a DDL before
+                you finish assigning.
+              </div>
+            </div>
+            <div class="np-field">
+              <label class="np-label">Steps</label>
+              <div
+                id="npModifyTaskStepsList"
+                class="np-modify-task-steps-wrap"
+              ></div>
+              <button
+                id="npModifyTaskAddStepBtn"
+                class="np-secondary-btn np-modify-task-add-step"
+                type="button"
+              >
+                Add step
+              </button>
+            </div>
+          </div>
+
+          <div id="npAddTaskError" class="np-center-error" hidden></div>
+          <div class="np-confirm-actions">
+            <button id="npAddTaskCancel" class="np-secondary-btn" type="button">
+              Cancel
+            </button>
+            <button id="npAddTaskOk" class="np-primary-btn" type="button">
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add DDL popup -->
+      <div id="npAddDdlOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal np-assign-form-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">Add DDL</div>
+          <div class="np-field">
+            <label class="np-label" for="npDdlInput">
+              Select time <span class="np-req">*</span>
+            </label>
+            <input
+              id="npDdlInput"
+              class="np-input"
+              type="datetime-local"
+              step="1"
+            />
+          </div>
+          <div id="npAddDdlError" class="np-center-error" hidden></div>
+          <div class="np-confirm-actions">
+            <button id="npAddDdlCancel" class="np-secondary-btn" type="button">
+              Cancel
+            </button>
+            <button id="npAddDdlOk" class="np-primary-btn" type="button">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Steps popup -->
+      <div id="npStepsOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal np-assign-steps-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">Add steps</div>
+          <div class="np-assign-steps-subtitle">current allocated steps</div>
+          <div id="npStepsList" class="np-assign-steps-list"></div>
+          <div class="np-assign-steps-actions-top">
+            <button id="npAddStepBtn" class="np-secondary-btn" type="button">
+              Add step
+            </button>
+          </div>
+          <div id="npStepsMinError" class="np-center-error" hidden>
+            At least 2 steps are required to complete the creation.
+          </div>
+          <div class="np-confirm-actions">
+            <button id="npStepsCancel" class="np-secondary-btn" type="button">
+              Cancel
+            </button>
+            <button id="npStepsConfirm" class="np-primary-btn" type="button">
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add/Modify step popup -->
+      <div id="npStepEditOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal np-assign-form-modal" role="dialog" aria-modal="true">
+          <div id="npStepEditTitle" class="np-confirm-title">Add step</div>
+          <div class="np-field">
+            <label class="np-label" for="npStepContentInput">
+              step content <span class="np-req">*</span>
+            </label>
+            <textarea id="npStepContentInput" class="np-textarea"></textarea>
+          </div>
+          <div id="npStepEditError" class="np-center-error" hidden></div>
+          <div class="np-confirm-actions">
+            <button id="npStepEditCancel" class="np-secondary-btn" type="button">
+              Cancel
+            </button>
+            <button id="npStepEditOk" class="np-primary-btn" type="button">
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete step confirm -->
+      <div id="npDeleteStepOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">Are you sure you want to delete this step?</div>
+          <div class="np-confirm-actions">
+            <button id="npDeleteStepYes" class="np-danger-btn" type="button">
+              Yes
+            </button>
+            <button id="npDeleteStepNo" class="np-secondary-btn" type="button">
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete current task (assign page) -->
+      <div id="npRemoveAssignTaskOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div id="npRemoveAssignTaskTitle" class="np-confirm-title">
+            Delete this task?
+          </div>
+          <div class="np-confirm-subtle">
+            This task’s DDL and steps will be removed from the draft.
+          </div>
+          <div class="np-confirm-actions">
+            <button
+              id="npRemoveAssignTaskYesBtn"
+              class="np-danger-btn"
+              type="button"
+            >
+              Yes
+            </button>
+            <button
+              id="npRemoveAssignTaskNoBtn"
+              class="np-secondary-btn"
+              type="button"
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Complete requirement popup -->
+      <div id="npAssignIncompleteOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-task-missing-modal" role="dialog" aria-modal="true">
+          <div class="np-task-missing-text">
+            Both Add DDL and Add steps must be completed for the task assignment
+            to be successful.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "unicollab_projects";
+
+      function loadProjects() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          return JSON.parse(raw) || [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveProjects(projects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+      }
+
+      function genId(prefix) {
+        return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      }
+
+      function redirectToAssignMain(projectId) {
+        window.location.href = `./create-project-step3.html?continue=1&projectId=${encodeURIComponent(
+          projectId
+        )}&step=3`;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const projectId = params.get("projectId");
+      const memberSid = params.get("memberSid");
+
+      let projects = loadProjects();
+      let project = projects.find((p) => p.id === projectId) || null;
+      if (!project) { window.location.href="./dashboard.html"; throw new Error("navigation_redirect"); }
+
+      function findMember() {
+        if (!project || !Array.isArray(project.members)) return null;
+        return project.members.find((m) => String(m.studentId) === String(memberSid));
+      }
+
+      const member = findMember();
+      if (!member) window.location.href = `./create-project-step3.html?continue=1&projectId=${encodeURIComponent(projectId)}&step=3`;
+
+      // Draft state (NOT saved until Complete)
+      let draftTasks = Array.isArray(member.tasks) ? structuredClone(member.tasks) : [];
+
+      // UI refs
+      const subtitleEl = document.getElementById("npAssignSubtitle");
+      const currentTasksEl = document.getElementById("npCurrentTasks");
+
+      const backArrowBtn = document.getElementById("npAssignBackArrow");
+      const backWarnOverlay = document.getElementById("npAssignBackWarnOverlay");
+      const backYesBtn = document.getElementById("npAssignBackYes");
+      const backNoBtn = document.getElementById("npAssignBackNo");
+
+      const addTaskBtn = document.getElementById("npAddTaskBtn");
+      const addTaskOverlay = document.getElementById("npAddTaskOverlay");
+      const taskTitleInput = document.getElementById("npTaskTitleInput");
+      const taskContentInput = document.getElementById("npTaskContentInput");
+      const addTaskError = document.getElementById("npAddTaskError");
+      const addTaskCancel = document.getElementById("npAddTaskCancel");
+      const addTaskOk = document.getElementById("npAddTaskOk");
+
+      const addDdlOverlay = document.getElementById("npAddDdlOverlay");
+      const ddlInput = document.getElementById("npDdlInput");
+      const addDdlError = document.getElementById("npAddDdlError");
+      const addDdlCancel = document.getElementById("npAddDdlCancel");
+      const addDdlOk = document.getElementById("npAddDdlOk");
+
+      const stepsOverlay = document.getElementById("npStepsOverlay");
+      const stepsListEl = document.getElementById("npStepsList");
+      const addStepBtn = document.getElementById("npAddStepBtn");
+      const stepsCancel = document.getElementById("npStepsCancel");
+      const stepsConfirm = document.getElementById("npStepsConfirm");
+      const stepsMinError = document.getElementById("npStepsMinError");
+
+      const stepEditOverlay = document.getElementById("npStepEditOverlay");
+      const stepEditTitle = document.getElementById("npStepEditTitle");
+      const stepContentInput = document.getElementById("npStepContentInput");
+      const stepEditError = document.getElementById("npStepEditError");
+      const stepEditCancel = document.getElementById("npStepEditCancel");
+      const stepEditOk = document.getElementById("npStepEditOk");
+
+      const deleteStepOverlay = document.getElementById("npDeleteStepOverlay");
+      const deleteStepYes = document.getElementById("npDeleteStepYes");
+      const deleteStepNo = document.getElementById("npDeleteStepNo");
+
+      const completeBtn = document.getElementById("npAssignCompleteBtn");
+      const incompleteOverlay = document.getElementById("npAssignIncompleteOverlay");
+
+      const addTaskModalTitle = document.getElementById("npAddTaskModalTitle");
+      const removeAssignTaskOverlay = document.getElementById(
+        "npRemoveAssignTaskOverlay"
+      );
+      const removeAssignTaskTitleEl = document.getElementById(
+        "npRemoveAssignTaskTitle"
+      );
+      const removeAssignTaskYesBtn = document.getElementById(
+        "npRemoveAssignTaskYesBtn"
+      );
+      const removeAssignTaskNoBtn = document.getElementById(
+        "npRemoveAssignTaskNoBtn"
+      );
+
+      // Current editing context
+      let activeTaskId = null; // for add ddl / steps
+      let stepEditMode = "add"; // add | modify
+      let activeStepId = null;
+      let pendingDeleteStepId = null;
+      /** @type {"add"|"modify"} */
+      let taskFormMode = "add";
+      /** @type {string | null} */
+      let pendingModifyTaskId = null;
+      /** @type {string | null} */
+      let pendingDeleteTaskId = null;
+      /** "stepsOverlay" | "modifyTaskModal" — where step add/edit applies */
+      let stepEditContext = "stepsOverlay";
+      /** Clone of steps while Modify task modal is open */
+      let modifyTaskDraftSteps = null;
+
+      const addTaskModifyExtras = document.getElementById(
+        "npAddTaskModifyExtras"
+      );
+      const modifyTaskDdlInput = document.getElementById(
+        "npModifyTaskDdlInput"
+      );
+      const modifyTaskStepsList = document.getElementById(
+        "npModifyTaskStepsList"
+      );
+      const modifyTaskAddStepBtn = document.getElementById(
+        "npModifyTaskAddStepBtn"
+      );
+
+      function openOverlay(el) {
+        el.hidden = false;
+      }
+      function closeOverlay(el) {
+        el.hidden = true;
+      }
+
+      function fmtDdl(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return iso;
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
+          d.getHours()
+        )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+
+      function isoToDatetimeLocalValue(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return "";
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+          d.getHours()
+        )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+
+      function resetAddTaskModifyExtras() {
+        addTaskModifyExtras.hidden = true;
+        modifyTaskDdlInput.value = "";
+        modifyTaskStepsList.innerHTML = "";
+        modifyTaskDraftSteps = null;
+      }
+
+      function renderModifyTaskModalSteps() {
+        modifyTaskStepsList.innerHTML = "";
+        if (!modifyTaskDraftSteps || !modifyTaskDraftSteps.length) {
+          const empty = document.createElement("div");
+          empty.className = "np-members-empty";
+          empty.style.padding = "10px";
+          empty.textContent = "No steps yet.";
+          modifyTaskStepsList.appendChild(empty);
+          return;
+        }
+        modifyTaskDraftSteps.forEach((s, idx) => {
+          const row = document.createElement("div");
+          row.className = "np-assign-step-row";
+
+          const left = document.createElement("div");
+          left.className = "np-assign-step-left";
+          left.textContent = `step${idx + 1}: ${s.content || ""}`;
+
+          const right = document.createElement("div");
+          right.className = "np-assign-step-actions";
+
+          const modBtn = document.createElement("button");
+          modBtn.type = "button";
+          modBtn.className = "np-assign-link-btn";
+          modBtn.textContent = "modify";
+          modBtn.addEventListener("click", function () {
+            stepEditContext = "modifyTaskModal";
+            stepEditMode = "modify";
+            activeStepId = s.id;
+            stepEditTitle.textContent = "Modify step";
+            stepContentInput.value = s.content || "";
+            stepEditError.hidden = true;
+            openOverlay(stepEditOverlay);
+          });
+
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "np-assign-link-btn np-assign-link-danger";
+          delBtn.textContent = "delete";
+          delBtn.addEventListener("click", function () {
+            stepEditContext = "modifyTaskModal";
+            pendingDeleteStepId = s.id;
+            openOverlay(deleteStepOverlay);
+          });
+
+          right.appendChild(modBtn);
+          right.appendChild(delBtn);
+          row.appendChild(left);
+          row.appendChild(right);
+          modifyTaskStepsList.appendChild(row);
+        });
+      }
+
+      function isTaskComplete(t) {
+        return !!t.ddl && Array.isArray(t.steps) && t.steps.length >= 2 && t.stepsConfirmed === true;
+      }
+
+      function ensureTaskShape(t) {
+        return {
+          id: t.id || genId("task"),
+          title: String(t.title || ""),
+          content: String(t.content || ""),
+          ddl: t.ddl || "",
+          steps: Array.isArray(t.steps) ? t.steps : [],
+          stepsConfirmed: t.stepsConfirmed === true,
+        };
+      }
+
+      function normalizeDraft() {
+        draftTasks = Array.isArray(draftTasks) ? draftTasks.map(ensureTaskShape) : [];
+      }
+
+      function renderTasks() {
+        currentTasksEl.innerHTML = "";
+        if (!draftTasks.length) {
+          const empty = document.createElement("div");
+          empty.className = "np-members-empty";
+          empty.textContent = "No tasks yet.";
+          currentTasksEl.appendChild(empty);
+          return;
+        }
+
+        draftTasks.forEach((t) => {
+          const wrap = document.createElement("div");
+          wrap.className = "np-member-row-wrap";
+
+          const card = document.createElement("div");
+          card.className = "np-assign-task-card";
+
+          const top = document.createElement("div");
+          top.className = "np-assign-task-top";
+
+          const title = document.createElement("div");
+          title.className = "np-assign-task-title";
+          title.textContent = t.title;
+
+          const actions = document.createElement("div");
+          actions.className = "np-assign-task-top-actions";
+
+          if (!t.ddl) {
+            const addDdlBtn = document.createElement("button");
+            addDdlBtn.type = "button";
+            addDdlBtn.className = "np-assign-mini-btn";
+            addDdlBtn.textContent = "+ Add DDL";
+            addDdlBtn.addEventListener("click", function () {
+              activeTaskId = t.id;
+              ddlInput.value = "";
+              addDdlError.hidden = true;
+              openOverlay(addDdlOverlay);
+            });
+            actions.appendChild(addDdlBtn);
+          }
+
+          if (!t.stepsConfirmed) {
+            const addStepsBtn = document.createElement("button");
+            addStepsBtn.type = "button";
+            addStepsBtn.className = "np-assign-mini-btn";
+            addStepsBtn.textContent = "+ Add steps";
+            addStepsBtn.addEventListener("click", function () {
+              activeTaskId = t.id;
+              stepsMinError.hidden = true;
+              openOverlay(stepsOverlay);
+              renderStepsModal();
+            });
+            actions.appendChild(addStepsBtn);
+          }
+
+          const badge = document.createElement("div");
+          badge.className = "np-assign-task-status";
+          badge.textContent = isTaskComplete(t) ? "Complete" : "Incomplete";
+          badge.classList.add(isTaskComplete(t) ? "is-good" : "is-zero");
+          actions.appendChild(badge);
+
+          top.appendChild(title);
+          top.appendChild(actions);
+
+          const content = document.createElement("div");
+          content.className = "np-assign-task-content";
+          content.textContent = t.content;
+
+          card.appendChild(top);
+          card.appendChild(content);
+
+          if (t.ddl) {
+            const ddlLine = document.createElement("div");
+            ddlLine.className = "np-assign-task-meta";
+            ddlLine.textContent = `DDL: ${fmtDdl(t.ddl)}`;
+            card.appendChild(ddlLine);
+          }
+
+          if (t.stepsConfirmed && Array.isArray(t.steps) && t.steps.length) {
+            const stepsWrap = document.createElement("div");
+            stepsWrap.className = "np-assign-task-steps";
+            t.steps.forEach((s, idx) => {
+              const line = document.createElement("div");
+              line.className = "np-assign-task-step-line";
+              line.textContent = `step${idx + 1}: ${s.content}`;
+              stepsWrap.appendChild(line);
+            });
+            card.appendChild(stepsWrap);
+          }
+
+          const pop = document.createElement("div");
+          pop.className = "np-member-hover-pop";
+          pop.setAttribute("role", "group");
+          pop.setAttribute("aria-label", "Task actions");
+
+          const modBtn = document.createElement("button");
+          modBtn.type = "button";
+          modBtn.className = "np-member-act-btn np-member-act-modify";
+          modBtn.textContent = "Modify";
+          modBtn.dataset.taskId = t.id;
+
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "np-member-act-btn np-member-act-delete";
+          delBtn.textContent = "Delete";
+          delBtn.dataset.taskId = t.id;
+
+          pop.appendChild(modBtn);
+          pop.appendChild(delBtn);
+          wrap.appendChild(card);
+          wrap.appendChild(pop);
+          currentTasksEl.appendChild(wrap);
+        });
+      }
+
+      function rerender() {
+        normalizeDraft();
+        renderTasks();
+      }
+
+      function getTaskById(id) {
+        return draftTasks.find((t) => t.id === id) || null;
+      }
+
+      // Steps modal rendering
+      function renderStepsModal() {
+        stepsListEl.innerHTML = "";
+        const t = getTaskById(activeTaskId);
+        if (!t) return;
+        if (!Array.isArray(t.steps)) t.steps = [];
+
+        if (!t.steps.length) {
+          const empty = document.createElement("div");
+          empty.className = "np-members-empty";
+          empty.textContent = "Empty.";
+          stepsListEl.appendChild(empty);
+          return;
+        }
+
+        t.steps.forEach((s, idx) => {
+          const row = document.createElement("div");
+          row.className = "np-assign-step-row";
+
+          const left = document.createElement("div");
+          left.className = "np-assign-step-left";
+          left.textContent = `step${idx + 1}: ${s.content}`;
+
+          const right = document.createElement("div");
+          right.className = "np-assign-step-actions";
+
+          const modBtn = document.createElement("button");
+          modBtn.type = "button";
+          modBtn.className = "np-assign-link-btn";
+          modBtn.textContent = "modify";
+          modBtn.addEventListener("click", function () {
+            stepEditContext = "stepsOverlay";
+            stepEditMode = "modify";
+            activeStepId = s.id;
+            stepEditTitle.textContent = "Modify step";
+            stepContentInput.value = s.content || "";
+            stepEditError.hidden = true;
+            openOverlay(stepEditOverlay);
+          });
+
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "np-assign-link-btn np-assign-link-danger";
+          delBtn.textContent = "delete";
+          delBtn.addEventListener("click", function () {
+            stepEditContext = "stepsOverlay";
+            pendingDeleteStepId = s.id;
+            openOverlay(deleteStepOverlay);
+          });
+
+          right.appendChild(modBtn);
+          right.appendChild(delBtn);
+
+          row.appendChild(left);
+          row.appendChild(right);
+          stepsListEl.appendChild(row);
+        });
+      }
+
+      // Title/subtitle
+      subtitleEl.innerHTML = `You are assigning <span class="np-assign-username">${member.fullName}</span>'s task`;
+
+      rerender();
+
+      currentTasksEl.addEventListener("click", function (e) {
+        const modBtn = e.target.closest(".np-member-act-modify");
+        const delBtn = e.target.closest(".np-member-act-delete");
+        if (modBtn && modBtn.dataset.taskId) {
+          const t = getTaskById(modBtn.dataset.taskId);
+          if (!t) return;
+          taskFormMode = "modify";
+          pendingModifyTaskId = t.id;
+          addTaskModalTitle.textContent = "Modify task";
+          taskTitleInput.value = t.title;
+          taskContentInput.value = t.content;
+          addTaskError.hidden = true;
+          addTaskModifyExtras.hidden = false;
+          modifyTaskDdlInput.value = isoToDatetimeLocalValue(t.ddl);
+          modifyTaskDraftSteps = Array.isArray(t.steps)
+            ? structuredClone(
+                t.steps.map((s) => ({
+                  id: s.id || genId("step"),
+                  content: String(s.content || ""),
+                }))
+              )
+            : [];
+          renderModifyTaskModalSteps();
+          openOverlay(addTaskOverlay);
+          return;
+        }
+        if (delBtn && delBtn.dataset.taskId) {
+          pendingDeleteTaskId = delBtn.dataset.taskId;
+          const t = getTaskById(pendingDeleteTaskId);
+          removeAssignTaskTitleEl.textContent = t
+            ? `Delete task "${t.title}"?`
+            : "Delete this task?";
+          openOverlay(removeAssignTaskOverlay);
+        }
+      });
+
+      removeAssignTaskNoBtn.addEventListener("click", function () {
+        pendingDeleteTaskId = null;
+        closeOverlay(removeAssignTaskOverlay);
+      });
+
+      removeAssignTaskYesBtn.addEventListener("click", function () {
+        if (pendingDeleteTaskId) {
+          const doubleCheck = window.confirm("Are you REALLY sure you want to delete this task? All draft details for this task will be lost.");
+          if (!doubleCheck) return;
+          const rid = pendingDeleteTaskId;
+          draftTasks = draftTasks.filter((x) => x.id !== rid);
+          if (activeTaskId === rid) {
+            activeTaskId = null;
+            closeOverlay(addDdlOverlay);
+            closeOverlay(stepsOverlay);
+            closeOverlay(stepEditOverlay);
+          }
+        }
+        pendingDeleteTaskId = null;
+        closeOverlay(removeAssignTaskOverlay);
+        rerender();
+      });
+
+      removeAssignTaskOverlay.addEventListener("click", function (e) {
+        if (e.target === removeAssignTaskOverlay) {
+          pendingDeleteTaskId = null;
+          closeOverlay(removeAssignTaskOverlay);
+        }
+      });
+
+      // Back arrow with warning
+      backArrowBtn.addEventListener("click", function () {
+        openOverlay(backWarnOverlay);
+      });
+      backYesBtn.addEventListener("click", function () {
+        closeOverlay(backWarnOverlay);
+        redirectToAssignMain(projectId);
+      });
+      backNoBtn.addEventListener("click", function () {
+        closeOverlay(backWarnOverlay);
+      });
+
+      // Add task flow
+      addTaskBtn.addEventListener("click", function () {
+        taskFormMode = "add";
+        pendingModifyTaskId = null;
+        addTaskModalTitle.textContent = "Add task";
+        taskTitleInput.value = "";
+        taskContentInput.value = "";
+        addTaskError.hidden = true;
+        resetAddTaskModifyExtras();
+        openOverlay(addTaskOverlay);
+      });
+      addTaskCancel.addEventListener("click", function () {
+        taskFormMode = "add";
+        pendingModifyTaskId = null;
+        addTaskModalTitle.textContent = "Add task";
+        resetAddTaskModifyExtras();
+        closeOverlay(addTaskOverlay);
+      });
+      addTaskOk.addEventListener("click", function () {
+        const title = taskTitleInput.value.trim();
+        const content = taskContentInput.value.trim();
+        if (!title) {
+          addTaskError.textContent = "Task title not completed";
+          addTaskError.hidden = false;
+          return;
+        }
+        if (!content) {
+          addTaskError.textContent = "Task content not completed";
+          addTaskError.hidden = false;
+          return;
+        }
+        if (taskFormMode === "modify" && pendingModifyTaskId) {
+          const t = getTaskById(pendingModifyTaskId);
+          if (t) {
+            t.title = title;
+            t.content = content;
+            const ddlVal = modifyTaskDdlInput.value.trim();
+            if (ddlVal) {
+              t.ddl = new Date(ddlVal).toISOString();
+            } else {
+              t.ddl = "";
+            }
+            if (Array.isArray(modifyTaskDraftSteps)) {
+              t.steps = modifyTaskDraftSteps.map((s) => ({
+                id: s.id || genId("step"),
+                content: String(s.content || ""),
+              }));
+              t.stepsConfirmed = t.steps.length >= 2;
+            }
+          }
+        } else {
+          draftTasks.push({
+            id: genId("task"),
+            title,
+            content,
+            ddl: "",
+            steps: [],
+            stepsConfirmed: false,
+          });
+        }
+        taskFormMode = "add";
+        pendingModifyTaskId = null;
+        addTaskModalTitle.textContent = "Add task";
+        resetAddTaskModifyExtras();
+        closeOverlay(addTaskOverlay);
+        rerender();
+      });
+
+      // Add DDL flow
+      addDdlCancel.addEventListener("click", function () {
+        closeOverlay(addDdlOverlay);
+        activeTaskId = null;
+      });
+      addDdlOk.addEventListener("click", function () {
+        const v = ddlInput.value;
+        if (!v) {
+          addDdlError.textContent = "DDL not completed";
+          addDdlError.hidden = false;
+          return;
+        }
+        const t = getTaskById(activeTaskId);
+        if (!t) return;
+        const iso = new Date(v).toISOString();
+        t.ddl = iso;
+        closeOverlay(addDdlOverlay);
+        activeTaskId = null;
+        rerender();
+      });
+
+      // Steps flow
+      stepsCancel.addEventListener("click", function () {
+        closeOverlay(stepsOverlay);
+        stepsMinError.hidden = true;
+        activeTaskId = null;
+      });
+      stepsConfirm.addEventListener("click", function () {
+        const t = getTaskById(activeTaskId);
+        if (!t) return;
+        const steps = Array.isArray(t.steps) ? t.steps : [];
+        if (steps.length < 2) {
+          stepsMinError.hidden = false;
+          return;
+        }
+        stepsMinError.hidden = true;
+        t.stepsConfirmed = true;
+        closeOverlay(stepsOverlay);
+        activeTaskId = null;
+        rerender();
+      });
+
+      addStepBtn.addEventListener("click", function () {
+        stepEditContext = "stepsOverlay";
+        stepEditMode = "add";
+        activeStepId = null;
+        stepEditTitle.textContent = "Add step";
+        stepContentInput.value = "";
+        stepEditError.hidden = true;
+        openOverlay(stepEditOverlay);
+      });
+
+      modifyTaskAddStepBtn.addEventListener("click", function () {
+        stepEditContext = "modifyTaskModal";
+        stepEditMode = "add";
+        activeStepId = null;
+        stepEditTitle.textContent = "Add step";
+        stepContentInput.value = "";
+        stepEditError.hidden = true;
+        openOverlay(stepEditOverlay);
+      });
+
+      stepEditCancel.addEventListener("click", function () {
+        closeOverlay(stepEditOverlay);
+      });
+
+      stepEditOk.addEventListener("click", function () {
+        const content = stepContentInput.value.trim();
+        if (!content) {
+          stepEditError.textContent = "step content not completed";
+          stepEditError.hidden = false;
+          return;
+        }
+        if (stepEditContext === "modifyTaskModal") {
+          if (!Array.isArray(modifyTaskDraftSteps)) modifyTaskDraftSteps = [];
+          if (stepEditMode === "add") {
+            modifyTaskDraftSteps.push({ id: genId("step"), content });
+          } else {
+            const s = modifyTaskDraftSteps.find((x) => x.id === activeStepId);
+            if (s) s.content = content;
+          }
+          closeOverlay(stepEditOverlay);
+          renderModifyTaskModalSteps();
+          return;
+        }
+
+        const t = getTaskById(activeTaskId);
+        if (!t) return;
+        if (!Array.isArray(t.steps)) t.steps = [];
+
+        if (stepEditMode === "add") {
+          t.steps.push({ id: genId("step"), content });
+        } else {
+          const s = t.steps.find((x) => x.id === activeStepId);
+          if (s) s.content = content;
+        }
+
+        closeOverlay(stepEditOverlay);
+        renderStepsModal();
+      });
+
+      deleteStepNo.addEventListener("click", function () {
+        closeOverlay(deleteStepOverlay);
+        pendingDeleteStepId = null;
+      });
+      deleteStepYes.addEventListener("click", function () {
+        if (stepEditContext === "modifyTaskModal" && modifyTaskDraftSteps) {
+          modifyTaskDraftSteps = modifyTaskDraftSteps.filter(
+            (s) => s.id !== pendingDeleteStepId
+          );
+          pendingDeleteStepId = null;
+          closeOverlay(deleteStepOverlay);
+          renderModifyTaskModalSteps();
+          return;
+        }
+        const t = getTaskById(activeTaskId);
+        if (!t) return;
+        t.steps = Array.isArray(t.steps)
+          ? t.steps.filter((s) => s.id !== pendingDeleteStepId)
+          : [];
+        closeOverlay(deleteStepOverlay);
+        pendingDeleteStepId = null;
+        renderStepsModal();
+      });
+
+      // Complete: must have at least 1 task and each task must have DDL + confirmed steps
+      completeBtn.addEventListener("click", function () {
+        normalizeDraft();
+        const hasTask = draftTasks.length >= 1;
+        const allComplete = hasTask && draftTasks.every(isTaskComplete);
+
+        if (!allComplete) {
+          openOverlay(incompleteOverlay);
+          return;
+        }
+
+        // Persist into localStorage
+        member.tasks = draftTasks;
+        member.taskCount = draftTasks.filter(isTaskComplete).length;
+        project.status = project.status || "pending";
+        project.draftStep = 3;
+        saveProjects(projects);
+
+        redirectToAssignMain(projectId);
+      });
+
+      // Close overlays by clicking outside
+      [
+        backWarnOverlay,
+        addTaskOverlay,
+        addDdlOverlay,
+        stepsOverlay,
+        stepEditOverlay,
+        deleteStepOverlay,
+        removeAssignTaskOverlay,
+        incompleteOverlay,
+      ].forEach((ov) => {
+        ov.addEventListener("click", function (e) {
+          if (e.target === ov) {
+            if (ov === addTaskOverlay) {
+              taskFormMode = "add";
+              pendingModifyTaskId = null;
+              addTaskModalTitle.textContent = "Add task";
+              resetAddTaskModifyExtras();
+            }
+            if (ov === removeAssignTaskOverlay) pendingDeleteTaskId = null;
+            closeOverlay(ov);
+          }
+        });
+      });
+
+      // Theme init
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>
+

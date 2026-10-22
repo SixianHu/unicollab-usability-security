@@ -1,0 +1,1115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Group Pending</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="gpp-page ws-page">
+      <header class="ws-topbar">
+        <div class="ws-brand">UniCollab</div>
+
+        <div class="ws-user-meta" aria-label="User identity">
+          <div class="ws-user-line">
+            <span class="ws-user-label">Name</span>
+            <span id="gppUserName" class="ws-user-value">--</span>
+          </div>
+          <div class="ws-user-line">
+            <span class="ws-user-label">SID</span>
+            <span id="gppUserSid" class="ws-user-value">--</span>
+          </div>
+        </div>
+
+        <button id="gppLogoutBtn" class="ws-logout-btn" type="button">
+          Log out
+        </button>
+      </header>
+
+      <div class="gpp-body">
+        <div class="ws-main gpp-board">
+          <div class="gpp-split">
+            <main class="gpp-left">
+              <div class="gpp-backbar">
+                <a class="gpp-back-link" href="./dashboard.html"
+                  ><span
+                    class="gpp-back-arrow"
+                    aria-hidden="true"
+                  ></span>
+                  Back to Dashboard</a
+                >
+              </div>
+
+              <div class="gpp-project-name" id="gppProjectName">
+                --
+              </div>
+
+              <div class="gpp-divider" aria-hidden="true"></div>
+
+              <section class="gpp-agreement-section" aria-label="Group Agreement">
+                <div class="gpp-agreement-title">Group Agreement</div>
+
+                <div class="gpp-agreement-buttons-row">
+                  <button
+                    id="gppAgreeBtn"
+                    class="gpp-circle-action-btn gpp-agree-btn"
+                    type="button"
+                    aria-label="Agree"
+                  >
+                    <span class="gpp-circle-icon" aria-hidden="true"
+                      >&#10004;</span
+                    >
+                  </button>
+                  <button
+                    id="gppRejectBtn"
+                    class="gpp-circle-action-btn gpp-reject-btn"
+                    type="button"
+                    aria-label="Reject"
+                  >
+                    <span class="gpp-circle-icon" aria-hidden="true"
+                      >&#10006;</span
+                    >
+                  </button>
+                </div>
+
+                <div
+                  id="gppAgreementStatusRow"
+                  class="gpp-agreement-status-row"
+                  aria-label="Agreement status row"
+                ></div>
+
+                <div class="gpp-agreement-bottom-actions">
+                  <button
+                    id="gppReassignmentBtn"
+                    class="gpp-reassignment-btn"
+                    type="button"
+                  >
+                    Reassignment
+                  </button>
+                  <button
+                    id="gppCheckTasksBtn"
+                    class="gpp-reassignment-btn"
+                    type="button"
+                  >
+                    Check tasks
+                  </button>
+                </div>
+              </section>
+            </main>
+
+            <aside class="gpp-right">
+              <div class="ws-members-box">
+                <div class="ws-members-title">Members</div>
+                <div id="gppMembersList" class="ws-members-list"></div>
+              </div>
+
+              <div class="ws-chat-box">
+                <div class="ws-phone-status-bar">
+                  <span class="ws-phone-time">12:45</span>
+                  <div class="ws-phone-icons">
+                    <span>📶</span>
+                    <span>🔋</span>
+                  </div>
+                </div>
+
+                <div class="ws-chat-top">
+                  <div class="ws-chat-mode-container">
+                    <button
+                      type="button"
+                      class="ws-chat-mode is-active"
+                      data-mode="group"
+                    >
+                      group
+                    </button>
+                    <div id="gppBadgeGroup" class="ws-chat-badge" hidden>0</div>
+                  </div>
+                  <div class="ws-chat-mode-container">
+                    <button type="button" class="ws-chat-mode" data-mode="private">
+                      private
+                    </button>
+                    <div id="gppBadgePrivate" class="ws-chat-badge" hidden>0</div>
+                  </div>
+                </div>
+
+                <div
+                  id="gppChatThread"
+                  class="ws-chat-thread"
+                  aria-label="Chat thread"
+                ></div>
+
+                <div class="ws-chat-input-row">
+                  <input
+                    id="gppChatInput"
+                    class="ws-chat-input"
+                    type="text"
+                    placeholder="Message..."
+                    disabled
+                  />
+                  <button
+                    id="gppSendBtn"
+                    class="ws-chat-send-btn"
+                    type="button"
+                    disabled
+                  >
+                    ↑
+                  </button>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "unicollab_projects";
+      const READS_KEY = "unicollab_chat_reads";
+      const E2EE_KEYS_KEY = "unicollab_e2ee_keys";
+
+      function loadProjects() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          return JSON.parse(raw) || [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveProjects(nextProjects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextProjects));
+      }
+
+      function loadChatReads() {
+        try {
+          const raw = localStorage.getItem(READS_KEY);
+          if (!raw) return {};
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveChatReads(nextReads) {
+        localStorage.setItem(READS_KEY, JSON.stringify(nextReads));
+      }
+
+      function loadE2EEKeysStore() {
+        try {
+          const raw = localStorage.getItem(E2EE_KEYS_KEY);
+          if (!raw) return {};
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveE2EEKeysStore(store) {
+        localStorage.setItem(E2EE_KEYS_KEY, JSON.stringify(store));
+      }
+
+      let currentUserSid = "";
+      let currentUserPrivateKey = null;
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function toBase64(bytes) {
+        const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        let binary = "";
+        for (let i = 0; i < view.length; i += 1) {
+          binary += String.fromCharCode(view[i]);
+        }
+        return btoa(binary);
+      }
+
+      function fromBase64(base64) {
+        const binary = atob(base64);
+        const out = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          out[i] = binary.charCodeAt(i);
+        }
+        return out;
+      }
+
+      async function getOrCreateCurrentUserIdentity() {
+        if (!window.crypto || !window.crypto.subtle) {
+          throw new Error("Web Crypto is not available.");
+        }
+        if (!currentUserSid) {
+          throw new Error("Missing current user student ID for E2EE.");
+        }
+
+        const store = loadE2EEKeysStore();
+        const existing = store[currentUserSid];
+        if (existing && existing.publicJwk && existing.privateJwk) {
+          const importedPrivate = await window.crypto.subtle.importKey(
+            "jwk",
+            existing.privateJwk,
+            { name: "ECDH", namedCurve: "P-256" },
+            false,
+            ["deriveKey", "deriveBits"]
+          );
+          return { privateKey: importedPrivate, publicJwk: existing.publicJwk };
+        }
+
+        const pair = await window.crypto.subtle.generateKey(
+          { name: "ECDH", namedCurve: "P-256" },
+          true,
+          ["deriveKey", "deriveBits"]
+        );
+        const publicJwk = await window.crypto.subtle.exportKey("jwk", pair.publicKey);
+        const privateJwk = await window.crypto.subtle.exportKey("jwk", pair.privateKey);
+        store[currentUserSid] = {
+          publicJwk,
+          privateJwk,
+          updatedAt: Date.now(),
+        };
+        saveE2EEKeysStore(store);
+        return { privateKey: pair.privateKey, publicJwk };
+      }
+
+      async function getPublicJwkBySid(sid) {
+        if (!sid) return null;
+        const sidStr = String(sid);
+        if (project && project.chatKeys && project.chatKeys[sidStr]?.publicJwk) {
+          return project.chatKeys[sidStr].publicJwk;
+        }
+        const store = loadE2EEKeysStore();
+        const row = store[sidStr];
+        return row && row.publicJwk ? row.publicJwk : null;
+      }
+
+      async function deriveSharedAesKey(myPrivateKey, peerPublicJwk) {
+        const peerPublicKey = await window.crypto.subtle.importKey(
+          "jwk",
+          peerPublicJwk,
+          { name: "ECDH", namedCurve: "P-256" },
+          false,
+          []
+        );
+        return window.crypto.subtle.deriveKey(
+          { name: "ECDH", public: peerPublicKey },
+          myPrivateKey,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
+        );
+      }
+
+      async function encryptForRecipient(plainText, recipientSid, senderSid, senderPrivateKey) {
+        const recipientPublicJwk = await getPublicJwkBySid(recipientSid);
+        if (!recipientPublicJwk) {
+          throw new Error(`Recipient key missing: ${recipientSid}`);
+        }
+        const aesKey = await deriveSharedAesKey(senderPrivateKey, recipientPublicJwk);
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const encoded = new TextEncoder().encode(String(plainText));
+        const cipher = await window.crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          aesKey,
+          encoded
+        );
+        return {
+          v: 1,
+          alg: "ECDH-P256/AES-256-GCM",
+          senderSid: String(senderSid),
+          recipientSid: String(recipientSid),
+          iv: toBase64(iv),
+          ciphertext: toBase64(new Uint8Array(cipher)),
+        };
+      }
+
+      async function decryptForCurrentUser(packet, myPrivateKey) {
+        const peerSid =
+          String(packet.senderSid) === String(currentUserSid)
+            ? String(packet.recipientSid)
+            : String(packet.senderSid);
+        const peerPublicJwk = await getPublicJwkBySid(peerSid);
+        if (!peerPublicJwk) {
+          throw new Error("Peer public key not found.");
+        }
+        const aesKey = await deriveSharedAesKey(myPrivateKey, peerPublicJwk);
+        const plainBuffer = await window.crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: fromBase64(packet.iv) },
+          aesKey,
+          fromBase64(packet.ciphertext)
+        );
+        return new TextDecoder().decode(plainBuffer);
+      }
+
+      async function encryptPrivatePayload(message, targetSid) {
+        const packet = await encryptForRecipient(
+          message,
+          String(targetSid),
+          currentUserSid,
+          currentUserPrivateKey
+        );
+        return {
+          type: "single",
+          packet,
+        };
+      }
+
+      async function decryptPrivatePayload(encrypted) {
+        if (!encrypted || encrypted.type !== "single" || !encrypted.packet) return null;
+        return decryptForCurrentUser(encrypted.packet, currentUserPrivateKey);
+      }
+
+      async function encryptGroupPayload(message) {
+        const recipientMap = {};
+        const recipientIds = Array.from(
+          new Set(
+            members
+              .map((m) => String(m.id || ""))
+              .filter(Boolean)
+              .concat(currentUserSid ? [String(currentUserSid)] : [])
+          )
+        );
+
+        for (const sid of recipientIds) {
+          try {
+            recipientMap[sid] = await encryptForRecipient(
+              message,
+              sid,
+              currentUserSid,
+              currentUserPrivateKey
+            );
+          } catch (e) {}
+        }
+
+        if (!Object.keys(recipientMap).length) {
+          throw new Error("No recipient public keys available for group message.");
+        }
+
+        return {
+          type: "fanout",
+          byRecipient: recipientMap,
+        };
+      }
+
+      async function decryptGroupPayload(encrypted) {
+        if (!encrypted || encrypted.type !== "fanout" || !encrypted.byRecipient) return null;
+        const packet = encrypted.byRecipient[String(currentUserSid)];
+        if (!packet) return null;
+        return decryptForCurrentUser(packet, currentUserPrivateKey);
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const projectId =
+        params.get("projectId") ||
+        localStorage.getItem("unicollab_projectId") ||
+        null;
+      const fallbackProjectName =
+        params.get("projectName") ||
+        localStorage.getItem("unicollab_projectName") ||
+        "Group Project";
+
+      if (!projectId) {
+        window.location.href = "./dashboard.html";
+      }
+
+      const storedName = localStorage.getItem("unicollab_fullName") || "User";
+      const storedSid = localStorage.getItem("unicollab_studentId") || "";
+
+      const userNameEl = document.getElementById("gppUserName");
+      const userSidEl = document.getElementById("gppUserSid");
+      const logoutBtn = document.getElementById("gppLogoutBtn");
+      const projectNameEl = document.getElementById("gppProjectName");
+
+      const agreeBtn = document.getElementById("gppAgreeBtn");
+      const rejectBtn = document.getElementById("gppRejectBtn");
+      const statusRowEl = document.getElementById("gppAgreementStatusRow");
+      const reassignBtn = document.getElementById("gppReassignmentBtn");
+      const checkTasksBtn = document.getElementById("gppCheckTasksBtn");
+
+      const AUTO_AGREE_LS_KEY = "unicollab_autoAgree";
+
+      // Right-side: Members + Chat
+      const membersListEl = document.getElementById("gppMembersList");
+      const chatModeBtns = Array.from(document.querySelectorAll(".ws-chat-mode"));
+      const chatThread = document.getElementById("gppChatThread");
+      const chatInput = document.getElementById("gppChatInput");
+      const sendBtn = document.getElementById("gppSendBtn");
+
+      userNameEl.textContent = storedName;
+      userSidEl.textContent = storedSid || "--";
+
+      logoutBtn.addEventListener("click", function () {
+        localStorage.removeItem("unicollab_fullName");
+        localStorage.removeItem("unicollab_studentId");
+        window.location.href = "./login.html";
+      });
+
+      let projects = loadProjects();
+      let project = projects.find((p) => p.id === projectId) || null;
+
+      if (
+        project &&
+        Array.isArray(project.members) &&
+        project.members.length > 0 &&
+        storedSid &&
+        !project.members.some((m) => String(m.studentId) === String(storedSid))
+      ) {
+        window.location.replace("./dashboard.html");
+      }
+
+      const projectName = project?.name || fallbackProjectName;
+      projectNameEl.textContent = String(projectName);
+
+      // Build members list (used for chat + agreement status).
+      const members = [];
+      if (project && Array.isArray(project.members) && project.members.length) {
+        project.members.forEach((m) => {
+          members.push({
+            id: String(m.studentId || ""),
+            name: m.fullName || "member",
+            role: m.role === "leader" ? "leader" : "member",
+          });
+        });
+      } else {
+        // Fallback: show the current user only.
+        members.push({ id: String(storedSid), name: storedName, role: "leader" });
+      }
+
+      /** User who finished setup on confirmation/success (not draft initiator) */
+      function resolveFinalizerStudentId() {
+        if (!project) return "";
+        return String(project.creationFinalizerStudentId || "");
+      }
+
+      // --- Group agreement state (stored inside the project in localStorage) ---
+      function readAgreementMap() {
+        if (!project) return {};
+        const raw = project.groupAgreement;
+        return raw && typeof raw === "object" ? raw : {};
+      }
+
+      function writeAgreementMap(nextMap) {
+        if (!project) return;
+        project.groupAgreement = nextMap;
+        projects = projects.map((p) => (p.id === projectId ? project : p));
+        saveProjects(projects);
+      }
+
+      function renderAgreementStatusRow() {
+        if (!project) return;
+
+        const agreementMap = readAgreementMap();
+
+        statusRowEl.innerHTML = "";
+
+        members.forEach((m) => {
+          const memberChoice = agreementMap[String(m.id)];
+
+          const item = document.createElement("div");
+          item.className = "gpp-agreement-member";
+
+          const circle = document.createElement("div");
+          circle.className = "gpp-agreement-circle";
+
+          const icon = document.createElement("span");
+          icon.className = "gpp-agreement-icon";
+          icon.setAttribute("aria-hidden", "true");
+
+          if (memberChoice === "agree") {
+            circle.classList.add("is-agree");
+            icon.textContent = "✔";
+          } else if (memberChoice === "reject") {
+            circle.classList.add("is-reject");
+            icon.textContent = "✖";
+          } else {
+            // Solid grey circle with no icon.
+            circle.classList.add("is-pending");
+            icon.textContent = "";
+          }
+
+          const name = document.createElement("div");
+          name.className = "gpp-agreement-member-name";
+          name.textContent = m.name;
+
+          circle.appendChild(icon);
+          item.appendChild(circle);
+          item.appendChild(name);
+          statusRowEl.appendChild(item);
+        });
+      }
+
+      function areAllMembersAgreedForMap(nextAgreementMap) {
+        if (!Array.isArray(members) || !members.length) return false;
+        return members.every(
+          (m) => nextAgreementMap[String(m.id)] === "agree"
+        );
+      }
+
+      function isAllMembersAgreed() {
+        if (!project) return false;
+        return areAllMembersAgreedForMap(readAgreementMap());
+      }
+
+      /** Setup finalizer is treated as agreed by default on pending page */
+      function ensureFinalizerAgreedOnLoad() {
+        if (!project) return false;
+        const finSid = resolveFinalizerStudentId();
+        if (!finSid) return false;
+        const agreementMap = readAgreementMap();
+        if (agreementMap[finSid] === "agree") return false;
+        agreementMap[finSid] = "agree";
+        const willAllAgree = areAllMembersAgreedForMap(agreementMap);
+        if (willAllAgree) project.status = "active";
+        writeAgreementMap(agreementMap);
+        if (willAllAgree) {
+          localStorage.setItem("unicollab_projectId", projectId);
+          localStorage.setItem("unicollab_projectName", String(projectName));
+          window.location.href = `./workspace.html?projectId=${encodeURIComponent(
+            projectId
+          )}&projectName=${encodeURIComponent(String(projectName))}`;
+          return true;
+        }
+        return false;
+      }
+
+      function consumeAutoAgreeMarkerIfMatches() {
+        try {
+          const raw = localStorage.getItem(AUTO_AGREE_LS_KEY);
+          if (!raw) return;
+          const marker = JSON.parse(raw);
+          if (!marker) return;
+          if (String(marker.projectId) !== String(projectId)) return;
+          if (String(marker.sid) !== String(storedSid)) return;
+
+          // Mark this user as agreed immediately after reassignment.
+          const agreementMap = readAgreementMap();
+          agreementMap[String(storedSid)] = "agree";
+          const willAllAgreeAfter = areAllMembersAgreedForMap(agreementMap);
+          if (willAllAgreeAfter) {
+            project.status = "active";
+          }
+          writeAgreementMap(agreementMap);
+          localStorage.removeItem(AUTO_AGREE_LS_KEY);
+        } catch (e) {}
+      }
+
+      function chooseAgreement(choice, opts = {}) {
+        if (!project) return;
+        if (!storedSid) return;
+
+        const agreementMap = readAgreementMap();
+        agreementMap[String(storedSid)] = choice;
+
+        const willAllAgreeAfter =
+          choice === "agree" && areAllMembersAgreedForMap(agreementMap);
+        if (willAllAgreeAfter) {
+          project.status = "active";
+        }
+
+        writeAgreementMap(agreementMap);
+        renderAgreementStatusRow();
+
+        const redirectOnAllAgree =
+          choice === "agree" && opts.redirectOnAllAgree !== false;
+        if (redirectOnAllAgree && willAllAgreeAfter) {
+          // Persist project identity for workspace page.
+          localStorage.setItem("unicollab_projectId", projectId);
+          localStorage.setItem("unicollab_projectName", String(projectName));
+          window.location.href = `./workspace.html?projectId=${encodeURIComponent(
+            projectId
+          )}&projectName=${encodeURIComponent(String(projectName))}`;
+        }
+      }
+
+      agreeBtn.addEventListener("click", function () {
+        chooseAgreement("agree");
+      });
+      rejectBtn.addEventListener("click", function () {
+        chooseAgreement("reject");
+      });
+
+      reassignBtn.addEventListener("click", function () {
+        try {
+          localStorage.setItem(
+            AUTO_AGREE_LS_KEY,
+            JSON.stringify({ projectId, sid: storedSid })
+          );
+        } catch (e) {}
+        window.location.href = `./create-project.html?continue=1&projectId=${encodeURIComponent(
+          projectId
+        )}&step=1`;
+      });
+
+      checkTasksBtn.addEventListener("click", function () {
+        window.location.href = `./create-project-confirmation.html?projectId=${encodeURIComponent(
+          projectId
+        )}&fromGroupPending=1`;
+      });
+
+      // Finalizer auto-agreed; after reassignment, marker fills current user
+      const redirectedByFinalizerAgree = ensureFinalizerAgreedOnLoad();
+      if (!redirectedByFinalizerAgree) {
+        consumeAutoAgreeMarkerIfMatches();
+        renderAgreementStatusRow();
+      }
+
+      // --- Chat (same persistence model as workspace.html: project.chat in localStorage) ---
+      const chatSid = storedSid;
+      const currentUserId = storedName;
+      currentUserSid = String(chatSid || "");
+      if (!currentUserSid) {
+        const me = members.find((m) => String(m.name) === String(storedName));
+        const fallbackSid = me ? String(me.id || "") : "";
+        if (fallbackSid && fallbackSid !== "--") currentUserSid = fallbackSid;
+      }
+      if (!currentUserSid && storedSid && storedSid !== "--") {
+        currentUserSid = String(storedSid);
+      }
+      let chatDatabase;
+      if (project) {
+        if (!project.chat || typeof project.chat !== "object") {
+          project.chat = {
+            group: [],
+            private: {},
+          };
+          projects = projects.map((p) => (p.id === projectId ? project : p));
+          saveProjects(projects);
+        }
+        if (!Array.isArray(project.chat.group)) project.chat.group = [];
+        if (!project.chat.private || typeof project.chat.private !== "object")
+          project.chat.private = {};
+        chatDatabase = project.chat;
+      } else {
+        chatDatabase = {
+          group: [],
+          private: {},
+        };
+      }
+
+      let chatMode = "group";
+      let privateChatTargetId = null;
+
+      function updateMemberPrivateBadges() {
+        if (!chatSid || !project) {
+          membersListEl
+            .querySelectorAll(".ws-member-unread-badge")
+            .forEach((b) => {
+              b.hidden = true;
+            });
+          return;
+        }
+
+        const reads = loadChatReads();
+        const projReads = reads?.[chatSid]?.[projectId] || {
+          group: 0,
+          private: {},
+        };
+        const privateReads = projReads.private || {};
+        const privateObj = chatDatabase.private || {};
+
+        membersListEl.querySelectorAll(".ws-member-item-wrap").forEach((wrap) => {
+          const item = wrap.querySelector(".ws-member-item");
+          const otherId = item?.dataset.userId;
+          let badge = wrap.querySelector(".ws-member-unread-badge");
+
+          if (!otherId) {
+            if (badge) badge.hidden = true;
+            return;
+          }
+
+          const userIds = [chatSid, otherId].sort();
+          const key = userIds.join("_");
+          const msgs = Array.isArray(privateObj[key]) ? privateObj[key] : [];
+          const msgLen = msgs.length;
+          const last =
+            typeof privateReads[key] === "number" ? privateReads[key] : 0;
+          const unread = Math.max(0, msgLen - last);
+
+          if (!badge) {
+            badge = document.createElement("span");
+            badge.className = "ws-member-unread-badge";
+            badge.setAttribute("aria-label", "Unread private messages");
+            wrap.appendChild(badge);
+          }
+
+          if (unread > 0) {
+            badge.textContent = unread > 99 ? "99+" : String(unread);
+            badge.hidden = false;
+          } else {
+            badge.hidden = true;
+          }
+        });
+      }
+
+      function updateChatBadges() {
+        const badgeGroup = document.getElementById("gppBadgeGroup");
+        const badgePrivate = document.getElementById("gppBadgePrivate");
+        if (!chatSid || !project) {
+          if (badgeGroup) badgeGroup.hidden = true;
+          if (badgePrivate) badgePrivate.hidden = true;
+          updateMemberPrivateBadges();
+          return;
+        }
+
+        const reads = loadChatReads();
+        const projReads = reads?.[chatSid]?.[projectId] || {
+          group: 0,
+          private: {},
+        };
+
+        const groupLen = Array.isArray(chatDatabase.group)
+          ? chatDatabase.group.length
+          : 0;
+        const groupRead =
+          typeof projReads.group === "number" ? projReads.group : 0;
+        const groupUnread = Math.max(0, groupLen - groupRead);
+
+        if (badgeGroup) {
+          if (groupUnread > 0) {
+            badgeGroup.textContent = groupUnread > 99 ? "99+" : String(groupUnread);
+            badgeGroup.hidden = false;
+          } else {
+            badgeGroup.hidden = true;
+          }
+        }
+
+        let privateUnread = 0;
+        const privateObj = chatDatabase.private || {};
+        const privateReads = projReads.private || {};
+
+        for (const [key, msgs] of Object.entries(privateObj)) {
+          const parts = String(key).split("_");
+          if (!parts.includes(String(chatSid))) continue;
+          const msgLen = Array.isArray(msgs) ? msgs.length : 0;
+          const last =
+            typeof privateReads[key] === "number" ? privateReads[key] : 0;
+          if (msgLen > last) privateUnread += msgLen - last;
+        }
+
+        if (badgePrivate) {
+          if (privateUnread > 0) {
+            badgePrivate.textContent =
+              privateUnread > 99 ? "99+" : String(privateUnread);
+            badgePrivate.hidden = false;
+          } else {
+            badgePrivate.hidden = true;
+          }
+        }
+
+        updateMemberPrivateBadges();
+      }
+
+      function markReadForCurrentMode() {
+        if (!chatSid || !project) {
+          updateChatBadges();
+          return;
+        }
+
+        const reads = loadChatReads();
+        if (!reads[chatSid] || typeof reads[chatSid] !== "object") {
+          reads[chatSid] = {};
+        }
+        if (!reads[chatSid][projectId] || typeof reads[chatSid][projectId] !== "object") {
+          reads[chatSid][projectId] = { group: 0, private: {} };
+        }
+
+        const projReads = reads[chatSid][projectId];
+        if (!projReads.private || typeof projReads.private !== "object") {
+          projReads.private = {};
+        }
+
+        const groupLen = Array.isArray(chatDatabase.group)
+          ? chatDatabase.group.length
+          : 0;
+
+        if (chatMode === "group") {
+          const last =
+            typeof projReads.group === "number" ? projReads.group : 0;
+          if (groupLen > last) {
+            projReads.group = groupLen;
+            saveChatReads(reads);
+          }
+          updateChatBadges();
+          return;
+        }
+
+        if (!privateChatTargetId) {
+          updateChatBadges();
+          return;
+        }
+        const userIds = [chatSid, privateChatTargetId].sort();
+        const key = userIds.join("_");
+        if (!chatDatabase.private[key]) chatDatabase.private[key] = [];
+        const privateLen = Array.isArray(chatDatabase.private[key])
+          ? chatDatabase.private[key].length
+          : 0;
+        const lastPrivate =
+          typeof projReads.private[key] === "number"
+            ? projReads.private[key]
+            : 0;
+        if (privateLen > lastPrivate) {
+          projReads.private[key] = privateLen;
+          saveChatReads(reads);
+        }
+        updateChatBadges();
+      }
+
+      function renderMembers() {
+        membersListEl.innerHTML = "";
+        members.forEach((member) => {
+          const wrap = document.createElement("div");
+          wrap.className = "ws-member-item-wrap";
+          const memberEl = document.createElement("div");
+          memberEl.className = "ws-member-item";
+
+          let displayName = `${member.name}`;
+          if (member.role === "leader") displayName += " (leader)";
+          if (member.name === storedName) {
+            displayName += " (You)";
+          } else {
+            memberEl.dataset.userId = member.id;
+          }
+
+          memberEl.textContent = displayName;
+          wrap.appendChild(memberEl);
+          membersListEl.appendChild(wrap);
+        });
+
+        if (privateChatTargetId && chatMode === "private") {
+          membersListEl.querySelectorAll(".ws-member-item").forEach((node) => {
+            if (node.dataset.userId === privateChatTargetId) {
+              node.classList.add("is-active");
+            }
+          });
+        }
+
+        updateMemberPrivateBadges();
+      }
+
+      function syncChatSendRow() {
+        sendBtn.disabled = chatInput.disabled;
+      }
+
+      async function renderChatMessages() {
+        chatThread.innerHTML = "";
+        let messages = [];
+
+        if (chatMode === "group") {
+          messages = chatDatabase.group;
+          chatInput.placeholder = "Message group...";
+          chatInput.disabled = false;
+        } else if (privateChatTargetId) {
+          const userIds = [chatSid, privateChatTargetId].sort();
+          const privateChatKey = userIds.join("_");
+          if (!chatDatabase.private[privateChatKey]) {
+            chatDatabase.private[privateChatKey] = [];
+          }
+          messages = chatDatabase.private[privateChatKey];
+          chatInput.placeholder = "Message private...";
+          chatInput.disabled = false;
+
+          const header = document.createElement("div");
+          header.className = "ws-chat-private-header";
+          const target = members.find((m) => m.id === privateChatTargetId);
+          header.innerHTML = `Chatting with <b>${escapeHtml(
+            target?.name || "member"
+          )}</b>`;
+          chatThread.appendChild(header);
+        } else {
+          chatThread.innerHTML =
+            '<div class="ws-chat-placeholder is-instructional"><div class="ws-chat-hint-icon">💬</div><div class="ws-chat-hint-text">Select a member from the <b>Members</b> list to start a private chat.</div></div>';
+          chatInput.placeholder = "Select a member";
+          chatInput.disabled = true;
+          updateChatBadges();
+          syncChatSendRow();
+          return;
+        }
+
+        if (!messages.length) {
+          chatThread.innerHTML += '<div class="ws-chat-placeholder">No messages yet.</div>';
+          markReadForCurrentMode();
+          syncChatSendRow();
+          return;
+        }
+
+        for (const msg of messages) {
+          const isMe = msg.userId === storedName;
+          const msgEl = document.createElement("div");
+          msgEl.className = `ws-chat-message ${isMe ? "is-me" : "is-other"}`;
+          const senderLabel = isMe ? `${msg.userId} (You)` : msg.userId;
+          let displayText = "";
+          if (chatMode === "group" && msg.encrypted) {
+            try {
+              displayText = await decryptGroupPayload(msg.encrypted);
+            } catch (e) {
+              displayText = "[Unable to decrypt]";
+            }
+          } else if (chatMode === "private" && msg.encrypted) {
+            try {
+              displayText = await decryptPrivatePayload(msg.encrypted);
+            } catch (e) {
+              displayText = "[Unable to decrypt]";
+            }
+          } else {
+            displayText = "[Unsupported message format]";
+          }
+          msgEl.innerHTML = `<div class="ws-chat-sender">${escapeHtml(
+            senderLabel
+          )}</div><div class="ws-chat-content">${escapeHtml(displayText || "")}</div>`;
+          chatThread.appendChild(msgEl);
+        }
+
+        chatThread.scrollTop = chatThread.scrollHeight;
+        markReadForCurrentMode();
+        syncChatSendRow();
+      }
+
+      function setChatMode(mode) {
+        chatMode = mode;
+        privateChatTargetId = null;
+
+        chatModeBtns.forEach((btn) => {
+          btn.classList.toggle("is-active", btn.dataset.mode === mode);
+        });
+
+        const membersBox = document.querySelector(".ws-members-box");
+        membersBox.classList.toggle("is-selection-mode", mode === "private");
+
+        membersListEl.querySelectorAll(".ws-member-item").forEach((child) =>
+          child.classList.remove("is-active")
+        );
+
+        renderChatMessages();
+      }
+
+      chatModeBtns.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          setChatMode(this.dataset.mode);
+        });
+      });
+
+      membersListEl.addEventListener("click", function (e) {
+        if (chatMode !== "private") return;
+        const targetEl = e.target.closest(".ws-member-item");
+        if (targetEl && targetEl.dataset.userId) {
+          privateChatTargetId = targetEl.dataset.userId;
+          membersListEl.querySelectorAll(".ws-member-item").forEach((child) =>
+            child.classList.remove("is-active")
+          );
+          targetEl.classList.add("is-active");
+          renderChatMessages();
+        }
+      });
+
+      async function sendMessage() {
+        if (!currentUserPrivateKey || !currentUserSid) {
+          window.alert("E2EE identity is not ready. Please refresh and try again.");
+          return;
+        }
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        const newMessage = { userId: storedName, senderSid: currentUserSid };
+        try {
+          if (chatMode === "group") {
+            newMessage.encrypted = await encryptGroupPayload(message);
+            chatDatabase.group.push(newMessage);
+          } else if (privateChatTargetId) {
+            const userIds = [currentUserSid, privateChatTargetId].sort();
+            const key = userIds.join("_");
+            if (!chatDatabase.private[key]) chatDatabase.private[key] = [];
+            newMessage.encrypted = await encryptPrivatePayload(
+              message,
+              privateChatTargetId
+            );
+            chatDatabase.private[key].push(newMessage);
+          } else {
+            return;
+          }
+        } catch (err) {
+          window.alert(
+            "Message cannot be encrypted yet. Let all members open this workspace once to publish E2EE keys, then retry."
+          );
+          return;
+        }
+
+        if (project) {
+          project.chat = chatDatabase;
+          projects = projects.map((p) => (p.id === projectId ? project : p));
+          saveProjects(projects);
+        }
+
+        chatInput.value = "";
+        renderChatMessages();
+        updateChatBadges();
+      }
+
+      sendBtn.addEventListener("click", sendMessage);
+      chatInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      async function initializeGroupPendingChat() {
+        try {
+          const identity = await getOrCreateCurrentUserIdentity();
+          currentUserPrivateKey = identity.privateKey;
+          if (project) {
+            if (!project.chatKeys || typeof project.chatKeys !== "object") {
+              project.chatKeys = {};
+            }
+            project.chatKeys[String(currentUserSid)] = {
+              publicJwk: identity.publicJwk,
+              updatedAt: Date.now(),
+            };
+            projects = projects.map((p) => (p.id === projectId ? project : p));
+            saveProjects(projects);
+          }
+        } catch (e) {
+          window.alert("Failed to initialize E2EE keys. Chat sending is disabled.");
+          chatInput.disabled = true;
+          sendBtn.disabled = true;
+        }
+
+        renderMembers();
+        setChatMode("group");
+        updateChatBadges();
+      }
+
+      initializeGroupPendingChat();
+
+      window.addEventListener("storage", function (e) {
+        if (e.key === READS_KEY) {
+          updateChatBadges();
+          return;
+        }
+        if (e.key !== STORAGE_KEY || !e.newValue || !projectId) return;
+        try {
+          const updatedProjects = JSON.parse(e.newValue);
+          const fresh = updatedProjects.find((p) => p.id === projectId);
+          if (!fresh || !fresh.chat) return;
+          projects = updatedProjects;
+          project = fresh;
+          chatDatabase = project.chat;
+          renderChatMessages();
+          updateChatBadges();
+        } catch (err) {}
+      });
+    </script>
+
+    <script>
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>

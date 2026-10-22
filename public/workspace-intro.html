@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Workspace Ready</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="np-page">
+      <section
+        class="np-modal np-success-modal"
+        aria-label="Group workspace ready"
+      >
+        <div class="np-success-content">
+          <div class="np-success-icon" aria-hidden="true">
+            <span class="np-success-check"></span>
+          </div>
+          <div class="np-success-text np-workspace-intro-text">
+            All members have approved the task assignment. You can start group
+            work now.
+          </div>
+        </div>
+        <div class="np-success-actions">
+          <button id="wsIntroGoBtn" class="np-primary-btn" type="button">
+            Let's Go
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const WS_INTRO_KEY = "unicollab_workspaceIntroDone";
+
+      function wsIntroStorageKey(projectId, sid) {
+        return `${String(projectId)}:${String(sid)}`;
+      }
+
+      function hasSeenWorkspaceIntro(projectId, sid) {
+        if (!projectId || !sid) return true;
+        try {
+          const raw = localStorage.getItem(WS_INTRO_KEY);
+          const map = raw ? JSON.parse(raw) : {};
+          return !!map[wsIntroStorageKey(projectId, sid)];
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function markWorkspaceIntroSeen(projectId, sid) {
+        if (!projectId || !sid) return;
+        try {
+          const raw = localStorage.getItem(WS_INTRO_KEY);
+          const map = raw ? JSON.parse(raw) : {};
+          map[wsIntroStorageKey(projectId, sid)] = true;
+          localStorage.setItem(WS_INTRO_KEY, JSON.stringify(map));
+        } catch (e) {}
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const projectId =
+        params.get("projectId") || localStorage.getItem("unicollab_projectId");
+      const projectName =
+        params.get("projectName") ||
+        localStorage.getItem("unicollab_projectName") ||
+        "Group Project";
+
+      if (!projectId) {
+        window.location.replace("./dashboard.html");
+      }
+
+      const sid = localStorage.getItem("unicollab_studentId") || "";
+
+      if (sid && hasSeenWorkspaceIntro(projectId, sid)) {
+        window.location.replace(
+          `./workspace.html?projectId=${encodeURIComponent(
+            projectId
+          )}&projectName=${encodeURIComponent(projectName)}`
+        );
+      }
+
+      document.getElementById("wsIntroGoBtn").addEventListener("click", function () {
+        markWorkspaceIntroSeen(projectId, sid);
+        localStorage.setItem("unicollab_projectId", projectId);
+        localStorage.setItem("unicollab_projectName", projectName);
+        window.location.href = `./workspace.html?projectId=${encodeURIComponent(
+          projectId
+        )}&projectName=${encodeURIComponent(projectName)}`;
+      });
+
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>

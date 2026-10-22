@@ -1,0 +1,2385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Group Workspace</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="ws-page">
+      <header class="ws-topbar">
+        <div class="ws-brand">UniCollab</div>
+
+        <div class="ws-user-meta" aria-label="User identity">
+          <div class="ws-user-line">
+            <span class="ws-user-label">Name</span>
+            <span id="wsUserName" class="ws-user-value">--</span>
+          </div>
+          <div class="ws-user-line">
+            <span class="ws-user-label">SID</span>
+            <span id="wsUserSid" class="ws-user-value">--</span>
+          </div>
+        </div>
+
+        <button id="wsLogoutBtn" class="ws-logout-btn" type="button">
+          Log out
+        </button>
+      </header>
+
+      <div class="ws-body">
+        <div class="ws-main">
+          <div class="ws-backbar">
+            <a class="ws-back-btn" href="./dashboard.html"
+              >&lt;---- Back to Dashboard</a
+            >
+          </div>
+
+          <div class="ws-project-head">
+            <div class="ws-project-name" id="wsProjectName">Project Name: --</div>
+            <div class="ws-project-head-actions">
+              <span
+                id="wsArchivedBadge"
+                class="ws-archived-badge"
+                hidden
+                >Archived · read-only</span>
+              <button
+                id="wsArchiveBtn"
+                class="ws-archive-btn"
+                type="button"
+              >
+                Archive
+              </button>
+            </div>
+          </div>
+
+          <div class="ws-tabs" role="tablist" aria-label="Workspace tabs">
+            <button class="ws-tab is-active" data-view="hub" type="button">
+              Information Hub
+            </button>
+            <button class="ws-tab" data-view="tasks" type="button">Tasks</button>
+            <button class="ws-tab" data-view="progress" type="button">
+              Progress
+            </button>
+          </div>
+
+          <section class="ws-view is-active" data-view="hub" id="wsHubView">
+            <div class="ws-hub-header">
+              <div class="ws-hub-title">Information Board</div>
+              <button id="wsNewInfoBtn" class="ws-new-info-btn" type="button">
+                + New Info
+              </button>
+            </div>
+            <div class="ws-hub-subtitle">New updates</div>
+            <div id="wsUpdatesList" class="ws-updates-list"></div>
+          </section>
+
+          <section class="ws-view" data-view="tasks" id="wsTasksView">
+            <div class="ws-hub-header">
+              <div class="ws-hub-title">Project Tasks</div>
+              <button id="wsNewTaskBtn" class="ws-new-info-btn" type="button">
+                + New Task
+              </button>
+            </div>
+            <div class="ws-hub-subtitle">Active tasks</div>
+            <div id="wsTasksList" class="ws-tasks-list"></div>
+            
+            <div class="ws-hub-subtitle ws-archived-tasks-title" id="wsArchivedTasksTitle" hidden>
+              Archived tasks 
+              <button id="wsToggleArchivedBtn" class="ws-toggle-archived-btn" type="button">Show</button>
+            </div>
+            <div id="wsArchivedTasksList" class="ws-tasks-list" hidden></div>
+          </section>
+
+          <section class="ws-view" data-view="progress" id="wsProgressView">
+            <div class="ws-hub-header">
+              <div class="ws-hub-title">Overall Progress</div>
+            </div>
+            <div class="ws-progress-dashboard">
+              <div class="ws-progress-card">
+                <div class="ws-progress-side">
+                  <div class="ws-progress-icon">✔️</div>
+                  <div id="wsCompletedCount" class="ws-progress-number">0</div>
+                  <div class="ws-progress-label">Completed</div>
+                </div>
+                <div class="ws-progress-divider"></div>
+                <div class="ws-progress-side">
+                  <div class="ws-progress-icon">⌛</div>
+                  <div id="wsOngoingCount" class="ws-progress-number">0</div>
+                  <div class="ws-progress-label">In Progress</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="ws-sidebar">
+          <div class="ws-members-box">
+            <div class="ws-members-title">Members</div>
+            <div id="wsMembersList" class="ws-members-list"></div>
+          </div>
+
+          <div class="ws-chat-box">
+            <div class="ws-phone-status-bar">
+              <span class="ws-phone-time">12:45</span>
+              <div class="ws-phone-icons">
+                <span>📶</span>
+                <span>🔋</span>
+              </div>
+            </div>
+
+            <div class="ws-chat-top">
+              <div class="ws-chat-mode-container">
+                <button
+                  type="button"
+                  class="ws-chat-mode is-active"
+                  data-mode="group"
+                >
+                  group
+                </button>
+                <div id="badgeGroup" class="ws-chat-badge" hidden>0</div>
+              </div>
+              <div class="ws-chat-mode-container">
+                <button type="button" class="ws-chat-mode" data-mode="private">
+                  private
+                </button>
+                <div id="badgePrivate" class="ws-chat-badge" hidden>0</div>
+              </div>
+            </div>
+
+            <div
+              id="wsChatThread"
+              class="ws-chat-thread"
+              aria-label="Chat thread"
+            ></div>
+
+            <div class="ws-chat-input-row">
+              <input
+                id="wsChatInput"
+                class="ws-chat-input"
+                type="text"
+                placeholder="Message..."
+                disabled
+              />
+              <button
+                id="wsSendBtn"
+                class="ws-chat-send-btn"
+                type="button"
+                disabled
+              >
+                ↑
+              </button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Floating window for New Info / Amend -->
+    <div id="wsModalOverlay" class="ws-modal-overlay" hidden>
+      <div class="ws-modal" role="dialog" aria-modal="true">
+        <div class="ws-modal-header">
+          <div id="wsModalTitle" class="ws-modal-title">New Info</div>
+          <button
+            id="wsModalCloseBtn"
+            class="ws-modal-close"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <form id="wsInfoForm" class="ws-modal-form" action="#" method="post">
+          <label class="ws-modal-label" for="wsInfoContent">
+            Info content<span class="ws-req" aria-hidden="true">*</span>
+          </label>
+          <textarea
+            id="wsInfoContent"
+            name="infoContent"
+            class="ws-modal-textarea"
+            required
+          ></textarea>
+
+          <div class="ws-modal-file-row">
+            <div class="ws-modal-label">Upload file (optional)</div>
+            <input id="wsInfoFile" type="file" class="ws-modal-file" hidden />
+            <button id="wsUploadBtn" class="ws-upload-btn" type="button">
+              Upload file
+            </button>
+          </div>
+
+          <div id="wsSelectedFileName" class="ws-selected-file-name">
+            No file selected.
+          </div>
+
+          <div class="ws-modal-actions">
+            <button
+              id="wsModalSubmitBtn"
+              class="ws-primary-btn"
+              type="submit"
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Floating window for New/Edit Task -->
+    <div id="wsTaskModalOverlay" class="ws-modal-overlay" hidden>
+      <div class="ws-modal" role="dialog" aria-modal="true">
+        <div class="ws-modal-header">
+          <div id="wsTaskModalTitle" class="ws-modal-title">New Task</div>
+          <button
+            id="wsTaskModalCloseBtn"
+            class="ws-modal-close"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <form id="wsTaskForm" class="ws-modal-form" action="#" method="post">
+          <label class="ws-modal-label" for="wsTaskTitle">
+            Task Title<span class="ws-req" aria-hidden="true">*</span>
+          </label>
+          <input id="wsTaskTitle" class="ws-modal-input" />
+
+          <label class="ws-modal-label" for="wsTaskContent">
+            Task Description<span class="ws-req" aria-hidden="true">*</span>
+          </label>
+          <textarea id="wsTaskContent" class="ws-modal-textarea"></textarea>
+
+          <label class="ws-modal-label" for="wsTaskMembersSelect" id="wsTaskMembersLabel">
+            Assign Members (Ctrl/Cmd + Click for multiple)<span
+              class="ws-req"
+              aria-hidden="true"
+              >*</span
+            >
+          </label>
+          <select id="wsTaskMembersSelect" class="ws-modal-select" multiple></select>
+
+          <div id="wsFixedAssigneeArea" hidden>
+            <label class="ws-modal-label">Assigned Members</label>
+            <div id="wsFixedAssigneeList" class="ws-fixed-assignee-list" style="margin-top: 8px; margin-bottom: 12px;"></div>
+          </div>
+
+          <label class="ws-modal-label" for="wsTaskDeadline">
+            Deadline<span class="ws-req" aria-hidden="true">*</span>
+          </label>
+          <input id="wsTaskDeadline" class="ws-modal-input" type="datetime-local" step="1" />
+
+          <label class="ws-modal-label">
+            Steps (at least 2 required)<span class="ws-req" aria-hidden="true">*</span>
+          </label>
+          <div id="wsTaskStepsList" class="ws-modal-steps-list"></div>
+          <button id="wsTaskAddStepBtn" class="ws-secondary-btn" type="button" style="margin-top: 8px;">+ Add Step</button>
+
+          <div id="wsTaskError" class="ws-modal-error" hidden>
+            Please select at least one member and provide all details.
+          </div>
+
+          <div id="wsTaskModalActionsRow" class="ws-modal-actions-row" hidden>
+            <button id="wsTaskModalConfirmBtn" type="button" class="ws-task-action-btn ws-confirm-btn">
+              Confirm Task
+            </button>
+            <button id="wsTaskModalDoneBtn" type="button" class="ws-task-action-btn ws-complete-btn">
+              Mark as Done
+            </button>
+          </div>
+
+          <div class="ws-modal-actions">
+            <button id="wsTaskModalSubmitBtn" class="ws-primary-btn" type="submit">
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="wsTaskCompleteModalOverlay" class="ws-modal-overlay" hidden>
+      <div class="ws-modal ws-task-complete-modal" role="dialog" aria-modal="true">
+        <div class="ws-modal-header">
+          <div class="ws-modal-title">Mark task as done</div>
+          <button
+            id="wsTaskCompleteCloseBtn"
+            class="ws-modal-close"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div class="ws-modal-form">
+          <div class="ws-modal-file-row">
+            <div class="ws-modal-label">1. Upload file (task work in file)</div>
+            <input
+              id="wsTaskCompleteFile"
+              type="file"
+              class="ws-modal-file"
+              hidden
+            />
+            <button
+              id="wsTaskCompleteUploadBtn"
+              class="ws-upload-btn"
+              type="button"
+            >
+              Choose file
+            </button>
+            <div id="wsTaskCompleteFileLabel" class="ws-selected-file-name">
+              No file selected.
+            </div>
+          </div>
+
+          <label class="ws-modal-label" for="wsTaskCompleteDesc"
+            >2. Describe completed work</label
+          >
+          <textarea
+            id="wsTaskCompleteDesc"
+            class="ws-modal-textarea"
+            rows="4"
+            placeholder="What was completed…"
+          ></textarea>
+
+          <div class="ws-modal-label">
+            3. Completion type<span class="ws-req" aria-hidden="true">*</span>
+          </div>
+          <div class="ws-complete-type-row" role="radiogroup" aria-label="Completion type">
+            <label class="ws-complete-type-option">
+              <input
+                type="radio"
+                name="wsTaskCompleteType"
+                value="full"
+                checked
+              />
+              Fully complete (archive task)
+            </label>
+            <label class="ws-complete-type-option">
+              <input
+                type="radio"
+                name="wsTaskCompleteType"
+                value="partial"
+              />
+              Partially completed
+            </label>
+          </div>
+
+          <div id="wsTaskCompleteError" class="ws-modal-error" hidden></div>
+
+          <div class="ws-modal-actions">
+            <button
+              id="wsTaskCompleteSubmitBtn"
+              class="ws-primary-btn"
+              type="button"
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="wsReassignModalOverlay" class="ws-modal-overlay" hidden>
+      <div class="ws-modal" role="dialog" aria-modal="true">
+        <div class="ws-modal-header">
+          <div class="ws-modal-title">Reassign task</div>
+          <button
+            id="wsReassignModalCloseBtn"
+            class="ws-modal-close"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div class="ws-modal-form">
+          <label class="ws-modal-label" for="wsReassignMemberSelect"
+            >Select a group member</label
+          >
+          <select id="wsReassignMemberSelect" class="ws-modal-select"></select>
+          <div class="ws-modal-actions">
+            <button
+              id="wsReassignSubmitBtn"
+              class="ws-primary-btn"
+              type="button"
+            >
+              Send reassignment request
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="wsReassignInboxOverlay" class="ws-modal-overlay" hidden>
+      <div class="ws-modal ws-reassign-inbox-modal" role="dialog" aria-modal="true">
+        <div class="ws-modal-header">
+          <div class="ws-modal-title">Tasks reassigned to you</div>
+        </div>
+        <div id="wsReassignInboxBody" class="ws-reassign-inbox-body"></div>
+      </div>
+    </div>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const projectId =
+        params.get("projectId") || localStorage.getItem("unicollab_projectId") || "";
+      const fallbackProjectName = params.get("projectName") || localStorage.getItem("unicollab_projectName") || "Group Project";
+
+      const WS_INTRO_KEY = "unicollab_workspaceIntroDone";
+      function wsIntroStorageKey(pid, sid) {
+        return `${String(pid)}:${String(sid)}`;
+      }
+      function hasSeenWorkspaceIntro(pid, sid) {
+        if (!pid || !sid) return true;
+        try {
+          const raw = localStorage.getItem(WS_INTRO_KEY);
+          const map = raw ? JSON.parse(raw) : {};
+          return !!map[wsIntroStorageKey(pid, sid)];
+        } catch (e) {
+          return false;
+        }
+      }
+
+      const STORAGE_KEY = "unicollab_projects";
+      const READS_KEY = "unicollab_chat_reads";
+      const REASSIGN_REJECT_KEY = "unicollab_reassign_reject_notices";
+      const E2EE_KEYS_KEY = "unicollab_e2ee_keys";
+
+      function loadProjects() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          return JSON.parse(raw) || [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveProjects(nextProjects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextProjects));
+      }
+
+      function loadChatReads() {
+        try {
+          const raw = localStorage.getItem(READS_KEY);
+          if (!raw) return {};
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveChatReads(nextReads) {
+        localStorage.setItem(READS_KEY, JSON.stringify(nextReads));
+      }
+
+      function loadReassignRejectNotices() {
+        try {
+          const raw = localStorage.getItem(REASSIGN_REJECT_KEY);
+          if (!raw) return [];
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveReassignRejectNotices(rows) {
+        localStorage.setItem(REASSIGN_REJECT_KEY, JSON.stringify(rows));
+      }
+
+      function loadE2EEKeysStore() {
+        try {
+          const raw = localStorage.getItem(E2EE_KEYS_KEY);
+          if (!raw) return {};
+          const parsed = JSON.parse(raw);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveE2EEKeysStore(store) {
+        localStorage.setItem(E2EE_KEYS_KEY, JSON.stringify(store));
+      }
+
+      function pushReassignRejectNotice(row) {
+        const cur = loadReassignRejectNotices();
+        cur.push(row);
+        saveReassignRejectNotices(cur);
+      }
+
+      function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result || ""));
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(file);
+        });
+      }
+
+      const userNameEl = document.getElementById("wsUserName");
+      const userSidEl = document.getElementById("wsUserSid");
+      const logoutBtn = document.getElementById("wsLogoutBtn");
+      const projectNameEl = document.getElementById("wsProjectName");
+
+      const tabs = Array.from(document.querySelectorAll(".ws-tab"));
+      const views = Array.from(document.querySelectorAll(".ws-view"));
+
+      const newInfoBtn = document.getElementById("wsNewInfoBtn");
+      const updatesList = document.getElementById("wsUpdatesList");
+      const membersList = document.getElementById("wsMembersList");
+
+      const modalOverlay = document.getElementById("wsModalOverlay");
+      const modalTitle = document.getElementById("wsModalTitle");
+      const modalCloseBtn = document.getElementById("wsModalCloseBtn");
+      const infoForm = document.getElementById("wsInfoForm");
+      const infoContentEl = document.getElementById("wsInfoContent");
+      const infoFileEl = document.getElementById("wsInfoFile");
+      const uploadBtn = document.getElementById("wsUploadBtn");
+      const selectedFileNameEl = document.getElementById("wsSelectedFileName");
+      const modalSubmitBtn = document.getElementById("wsModalSubmitBtn");
+
+      // Task elements
+      const newTaskBtn = document.getElementById("wsNewTaskBtn");
+      const tasksList = document.getElementById("wsTasksList");
+      const archivedTasksList = document.getElementById("wsArchivedTasksList");
+      const archivedTasksTitle = document.getElementById("wsArchivedTasksTitle");
+      const toggleArchivedBtn = document.getElementById("wsToggleArchivedBtn");
+      const taskModalOverlay = document.getElementById("wsTaskModalOverlay");
+      const taskModalCloseBtn = document.getElementById("wsTaskModalCloseBtn");
+      const taskForm = document.getElementById("wsTaskForm");
+      const taskTitleEl = document.getElementById("wsTaskTitle");
+      const taskContentEl = document.getElementById("wsTaskContent");
+      const taskMembersSelect = document.getElementById("wsTaskMembersSelect");
+      const taskMembersLabel = document.getElementById("wsTaskMembersLabel");
+      const fixedAssigneeArea = document.getElementById("wsFixedAssigneeArea");
+      const fixedAssigneeList = document.getElementById("wsFixedAssigneeList");
+      const taskDeadlineEl = document.getElementById("wsTaskDeadline");
+      const taskStepsListEl = document.getElementById("wsTaskStepsList");
+      const taskAddStepBtn = document.getElementById("wsTaskAddStepBtn");
+      const taskErrorEl = document.getElementById("wsTaskError");
+      const taskModalActionsRow = document.getElementById("wsTaskModalActionsRow");
+      const taskModalConfirmBtn = document.getElementById("wsTaskModalConfirmBtn");
+      const taskModalDoneBtn = document.getElementById("wsTaskModalDoneBtn");
+      const taskCompleteModalOverlay = document.getElementById(
+        "wsTaskCompleteModalOverlay"
+      );
+      const taskCompleteCloseBtn = document.getElementById(
+        "wsTaskCompleteCloseBtn"
+      );
+      const taskCompleteFileEl = document.getElementById("wsTaskCompleteFile");
+      const taskCompleteUploadBtn = document.getElementById(
+        "wsTaskCompleteUploadBtn"
+      );
+      const taskCompleteFileLabel = document.getElementById(
+        "wsTaskCompleteFileLabel"
+      );
+      const taskCompleteDescEl = document.getElementById("wsTaskCompleteDesc");
+      const taskCompleteErrorEl = document.getElementById("wsTaskCompleteError");
+      const taskCompleteSubmitBtn = document.getElementById(
+        "wsTaskCompleteSubmitBtn"
+      );
+      const completedCountEl = document.getElementById("wsCompletedCount");
+      const ongoingCountEl = document.getElementById("wsOngoingCount");
+
+      const reassignModalOverlay = document.getElementById(
+        "wsReassignModalOverlay"
+      );
+      const reassignModalCloseBtn = document.getElementById(
+        "wsReassignModalCloseBtn"
+      );
+      const reassignMemberSelect = document.getElementById(
+        "wsReassignMemberSelect"
+      );
+      const reassignSubmitBtn = document.getElementById("wsReassignSubmitBtn");
+      const reassignInboxOverlay = document.getElementById(
+        "wsReassignInboxOverlay"
+      );
+      const reassignInboxBody = document.getElementById("wsReassignInboxBody");
+
+      // Chat elements
+      const chatModeBtns = Array.from(document.querySelectorAll(".ws-chat-mode"));
+      const chatThread = document.getElementById("wsChatThread");
+      const chatInput = document.getElementById("wsChatInput");
+      const sendBtn = document.getElementById("wsSendBtn");
+      const archiveBtn = document.getElementById("wsArchiveBtn");
+      const archivedBadge = document.getElementById("wsArchivedBadge");
+
+      modalOverlay.hidden = true;
+      taskModalOverlay.hidden = true;
+      taskCompleteModalOverlay.hidden = true;
+      reassignModalOverlay.hidden = true;
+      reassignInboxOverlay.hidden = true;
+
+      const storedName = localStorage.getItem("unicollab_fullName") || "User";
+      const chatSid = localStorage.getItem("unicollab_studentId") || "";
+      const storedSid = chatSid || "--";
+      userNameEl.textContent = storedName;
+      userSidEl.textContent = storedSid;
+
+      logoutBtn.addEventListener("click", function () {
+        localStorage.removeItem("unicollab_fullName");
+        localStorage.removeItem("unicollab_studentId");
+        window.location.href = "./login.html";
+      });
+
+      const allProjects = loadProjects();
+      const project = allProjects.find((p) => p.id === projectId) || null;
+      const accessSid = localStorage.getItem("unicollab_studentId") || "";
+      if (
+        project &&
+        Array.isArray(project.members) &&
+        project.members.length > 0 &&
+        accessSid &&
+        !project.members.some((m) => String(m.studentId) === String(accessSid))
+      ) {
+        window.location.replace("./dashboard.html");
+      }
+
+      if (!String(projectId || "").trim() || !project) {
+        window.location.replace("./dashboard.html");
+        throw new Error("workspace_redirect");
+      }
+
+      let workspaceReadOnly = project.status === "archived";
+
+      const projectName = project?.name || fallbackProjectName;
+
+      if (accessSid && !hasSeenWorkspaceIntro(projectId, accessSid)) {
+        window.location.replace(
+          `./workspace-intro.html?projectId=${encodeURIComponent(
+            projectId
+          )}&projectName=${encodeURIComponent(projectName)}`
+        );
+      }
+
+      projectNameEl.textContent = `Project Name: ${projectName}`;
+
+      // Use real project members when available, fallback to synthetic list.
+      const members = [];
+      if (project && Array.isArray(project.members) && project.members.length) {
+        project.members.forEach((m) => {
+          members.push({
+            id: String(m.studentId || m.fullName || `m_${Date.now()}`),
+            name: m.fullName || "member",
+            role: m.role === "leader" ? "leader" : "member",
+          });
+        });
+      } else {
+        members.push({
+          id: chatSid || storedSid,
+          name: storedName,
+          role: "leader",
+        });
+      }
+
+      // --- Chat data (persisted on project) ---
+      const currentUserId = storedName;
+      let currentUserSid = String(chatSid || "");
+      let currentUserPrivateKey = null;
+      if (!currentUserSid) {
+        const me = members.find((m) => String(m.name) === String(storedName));
+        const fallbackSid = me ? String(me.id || "") : "";
+        if (fallbackSid && fallbackSid !== "--") currentUserSid = fallbackSid;
+      }
+      if (!currentUserSid && storedSid && storedSid !== "--") {
+        currentUserSid = String(storedSid);
+      }
+      let chatDatabase;
+      if (project) {
+        if (!project.chat || typeof project.chat !== "object") {
+          project.chat =
+            project.status === "archived"
+              ? { group: [], private: {} }
+              : {
+                  group: [],
+                  private: {},
+                };
+          if (project.status !== "archived") saveProjects(allProjects);
+        }
+        if (!Array.isArray(project.chat.group)) project.chat.group = [];
+        if (!project.chat.private || typeof project.chat.private !== "object")
+          project.chat.private = {};
+        chatDatabase = project.chat;
+      } else {
+        chatDatabase = {
+          group: [],
+          private: {},
+        };
+      }
+
+      let chatMode = "group";
+      let privateChatTargetId = null;
+
+      function toBase64(bytes) {
+        const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        let binary = "";
+        for (let i = 0; i < view.length; i += 1) {
+          binary += String.fromCharCode(view[i]);
+        }
+        return btoa(binary);
+      }
+
+      function fromBase64(base64) {
+        const binary = atob(base64);
+        const out = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          out[i] = binary.charCodeAt(i);
+        }
+        return out;
+      }
+
+      async function getOrCreateCurrentUserIdentity() {
+        if (!window.crypto || !window.crypto.subtle) {
+          throw new Error("Web Crypto is not available.");
+        }
+        if (!currentUserSid) {
+          throw new Error("Missing current user student ID for E2EE.");
+        }
+
+        const store = loadE2EEKeysStore();
+        const existing = store[currentUserSid];
+        if (existing && existing.publicJwk && existing.privateJwk) {
+          const importedPrivate = await window.crypto.subtle.importKey(
+            "jwk",
+            existing.privateJwk,
+            { name: "ECDH", namedCurve: "P-256" },
+            false,
+            ["deriveKey", "deriveBits"]
+          );
+          return { privateKey: importedPrivate, publicJwk: existing.publicJwk };
+        }
+
+        const pair = await window.crypto.subtle.generateKey(
+          { name: "ECDH", namedCurve: "P-256" },
+          true,
+          ["deriveKey", "deriveBits"]
+        );
+        const publicJwk = await window.crypto.subtle.exportKey("jwk", pair.publicKey);
+        const privateJwk = await window.crypto.subtle.exportKey("jwk", pair.privateKey);
+        store[currentUserSid] = {
+          publicJwk,
+          privateJwk,
+          updatedAt: Date.now(),
+        };
+        saveE2EEKeysStore(store);
+        return { privateKey: pair.privateKey, publicJwk };
+      }
+
+      function getMemberNameBySid(sid) {
+        const found = members.find((m) => String(m.id) === String(sid));
+        return found ? found.name : null;
+      }
+
+      async function getPublicJwkBySid(sid) {
+        if (!sid) return null;
+        const sidStr = String(sid);
+        if (project && project.chatKeys && project.chatKeys[sidStr]?.publicJwk) {
+          return project.chatKeys[sidStr].publicJwk;
+        }
+        const store = loadE2EEKeysStore();
+        const row = store[sidStr];
+        return row && row.publicJwk ? row.publicJwk : null;
+      }
+
+      async function deriveSharedAesKey(myPrivateKey, peerPublicJwk) {
+        const peerPublicKey = await window.crypto.subtle.importKey(
+          "jwk",
+          peerPublicJwk,
+          { name: "ECDH", namedCurve: "P-256" },
+          false,
+          []
+        );
+        return window.crypto.subtle.deriveKey(
+          { name: "ECDH", public: peerPublicKey },
+          myPrivateKey,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
+        );
+      }
+
+      async function encryptForRecipient(plainText, recipientSid, senderSid, senderPrivateKey) {
+        const recipientPublicJwk = await getPublicJwkBySid(recipientSid);
+        if (!recipientPublicJwk) {
+          throw new Error(`Recipient key missing: ${recipientSid}`);
+        }
+        const aesKey = await deriveSharedAesKey(senderPrivateKey, recipientPublicJwk);
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const encoded = new TextEncoder().encode(String(plainText));
+        const cipher = await window.crypto.subtle.encrypt(
+          { name: "AES-GCM", iv },
+          aesKey,
+          encoded
+        );
+        return {
+          v: 1,
+          alg: "ECDH-P256/AES-256-GCM",
+          senderSid: String(senderSid),
+          recipientSid: String(recipientSid),
+          iv: toBase64(iv),
+          ciphertext: toBase64(new Uint8Array(cipher)),
+        };
+      }
+
+      async function decryptForCurrentUser(packet, myPrivateKey) {
+        const peerSid =
+          String(packet.senderSid) === String(currentUserSid)
+            ? String(packet.recipientSid)
+            : String(packet.senderSid);
+        const peerPublicJwk = await getPublicJwkBySid(peerSid);
+        if (!peerPublicJwk) {
+          throw new Error("Peer public key not found.");
+        }
+        const aesKey = await deriveSharedAesKey(myPrivateKey, peerPublicJwk);
+        const plainBuffer = await window.crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: fromBase64(packet.iv) },
+          aesKey,
+          fromBase64(packet.ciphertext)
+        );
+        return new TextDecoder().decode(plainBuffer);
+      }
+
+      async function encryptPrivatePayload(message, targetSid) {
+        const packet = await encryptForRecipient(
+          message,
+          String(targetSid),
+          currentUserSid,
+          currentUserPrivateKey
+        );
+        return {
+          type: "single",
+          packet,
+        };
+      }
+
+      async function decryptPrivatePayload(encrypted) {
+        if (!encrypted || encrypted.type !== "single" || !encrypted.packet) return null;
+        return decryptForCurrentUser(encrypted.packet, currentUserPrivateKey);
+      }
+
+      async function encryptGroupPayload(message) {
+        const recipientMap = {};
+        const recipientIds = Array.from(
+          new Set(
+            members
+              .map((m) => String(m.id || ""))
+              .filter(Boolean)
+              .concat(currentUserSid ? [String(currentUserSid)] : [])
+          )
+        );
+
+        for (const sid of recipientIds) {
+          try {
+            recipientMap[sid] = await encryptForRecipient(
+              message,
+              sid,
+              currentUserSid,
+              currentUserPrivateKey
+            );
+          } catch (e) {}
+        }
+
+        if (!Object.keys(recipientMap).length) {
+          throw new Error("No recipient public keys available for group message.");
+        }
+
+        return {
+          type: "fanout",
+          byRecipient: recipientMap,
+        };
+      }
+
+      async function decryptGroupPayload(encrypted) {
+        if (!encrypted || encrypted.type !== "fanout" || !encrypted.byRecipient) return null;
+        const packet = encrypted.byRecipient[String(currentUserSid)];
+        if (!packet) return null;
+        return decryptForCurrentUser(packet, currentUserPrivateKey);
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function renderMembers() {
+        membersList.innerHTML = "";
+        members.forEach((member) => {
+          const wrap = document.createElement("div");
+          wrap.className = "ws-member-item-wrap";
+          const memberEl = document.createElement("div");
+          memberEl.className = "ws-member-item";
+
+          let displayName = `${member.name}`;
+          if (member.role === "leader") displayName += " (leader)";
+          if (member.name === storedName) {
+            displayName += " (You)";
+          } else {
+            memberEl.dataset.userId = member.id;
+          }
+
+          memberEl.textContent = displayName;
+          wrap.appendChild(memberEl);
+
+          if (member.name !== storedName) {
+            const noticeBtn = document.createElement("button");
+            noticeBtn.className = "ws-member-notice-btn";
+            noticeBtn.type = "button";
+            noticeBtn.innerHTML = "✉"; // Envelope icon
+            noticeBtn.title = "Send Notice";
+            noticeBtn.style.display = chatMode === "private" ? "inline-flex" : "none";
+            noticeBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              alert(`A notification email has been sent to ${member.name}.`);
+            });
+            wrap.appendChild(noticeBtn);
+          }
+
+          membersList.appendChild(wrap);
+        });
+
+        if (privateChatTargetId && chatMode === "private") {
+          membersList.querySelectorAll(".ws-member-item").forEach((node) => {
+            if (node.dataset.userId === privateChatTargetId) {
+              node.classList.add("is-active");
+            }
+          });
+        }
+
+        updateMemberPrivateBadges();
+      }
+
+      function updateMemberPrivateBadges() {
+        if (!chatSid || !project) {
+          membersList
+            .querySelectorAll(".ws-member-unread-badge")
+            .forEach((b) => {
+              b.hidden = true;
+            });
+          return;
+        }
+
+        const reads = loadChatReads();
+        const projReads = reads?.[chatSid]?.[projectId] || {
+          group: 0,
+          private: {},
+        };
+        const privateReads = projReads.private || {};
+        const privateObj = chatDatabase.private || {};
+
+        membersList.querySelectorAll(".ws-member-item-wrap").forEach((wrap) => {
+          const item = wrap.querySelector(".ws-member-item");
+          const otherId = item?.dataset.userId;
+          let badge = wrap.querySelector(".ws-member-unread-badge");
+
+          if (!otherId) {
+            if (badge) badge.hidden = true;
+            return;
+          }
+
+          const userIds = [chatSid, otherId].sort();
+          const key = userIds.join("_");
+          const msgs = Array.isArray(privateObj[key]) ? privateObj[key] : [];
+          const msgLen = msgs.length;
+          const last =
+            typeof privateReads[key] === "number" ? privateReads[key] : 0;
+          const unread = Math.max(0, msgLen - last);
+
+          if (!badge) {
+            badge = document.createElement("span");
+            badge.className = "ws-member-unread-badge";
+            badge.setAttribute("aria-label", "Unread private messages");
+            wrap.appendChild(badge);
+          }
+
+          if (unread > 0) {
+            badge.textContent = unread > 99 ? "99+" : String(unread);
+            badge.hidden = false;
+          } else {
+            badge.hidden = true;
+          }
+        });
+      }
+
+      function updateChatBadges() {
+        if (!chatSid || !project) {
+          updateMemberPrivateBadges();
+          return;
+        }
+
+        const reads = loadChatReads();
+        const projReads = reads?.[chatSid]?.[projectId] || {
+          group: 0,
+          private: {},
+        };
+
+        const groupLen = Array.isArray(chatDatabase.group)
+          ? chatDatabase.group.length
+          : 0;
+        const groupRead =
+          typeof projReads.group === "number" ? projReads.group : 0;
+        const groupUnread = Math.max(0, groupLen - groupRead);
+
+        const badgeGroup = document.getElementById("badgeGroup");
+        if (groupUnread > 0) {
+          badgeGroup.textContent = groupUnread > 99 ? "99+" : String(groupUnread);
+          badgeGroup.hidden = false;
+        } else {
+          badgeGroup.hidden = true;
+        }
+
+        let privateUnread = 0;
+        const privateObj = chatDatabase.private || {};
+        const privateReads = projReads.private || {};
+
+        for (const [key, msgs] of Object.entries(privateObj)) {
+          const parts = String(key).split("_");
+          if (!parts.includes(String(chatSid))) continue;
+          const msgLen = Array.isArray(msgs) ? msgs.length : 0;
+          const last =
+            typeof privateReads[key] === "number" ? privateReads[key] : 0;
+          if (msgLen > last) privateUnread += msgLen - last;
+        }
+
+        const badgePrivate = document.getElementById("badgePrivate");
+        if (privateUnread > 0) {
+          badgePrivate.textContent =
+            privateUnread > 99 ? "99+" : String(privateUnread);
+          badgePrivate.hidden = false;
+        } else {
+          badgePrivate.hidden = true;
+        }
+
+        updateMemberPrivateBadges();
+      }
+
+      function markReadForCurrentMode() {
+        if (!chatSid || !project) return;
+
+        const reads = loadChatReads();
+        if (!reads[chatSid] || typeof reads[chatSid] !== "object") {
+          reads[chatSid] = {};
+        }
+        if (!reads[chatSid][projectId] || typeof reads[chatSid][projectId] !== "object") {
+          reads[chatSid][projectId] = { group: 0, private: {} };
+        }
+
+        const projReads = reads[chatSid][projectId];
+        if (!projReads.private || typeof projReads.private !== "object") {
+          projReads.private = {};
+        }
+
+        const groupLen = Array.isArray(chatDatabase.group)
+          ? chatDatabase.group.length
+          : 0;
+
+        if (chatMode === "group") {
+          const last =
+            typeof projReads.group === "number" ? projReads.group : 0;
+          if (groupLen > last) {
+            projReads.group = groupLen;
+            saveChatReads(reads);
+          }
+          updateChatBadges();
+          return;
+        }
+
+        if (!privateChatTargetId) {
+          updateChatBadges();
+          return;
+        }
+        const userIds = [chatSid, privateChatTargetId].sort();
+        const key = userIds.join("_");
+        if (!chatDatabase.private[key]) chatDatabase.private[key] = [];
+        const privateLen = Array.isArray(chatDatabase.private[key])
+          ? chatDatabase.private[key].length
+          : 0;
+        const lastPrivate =
+          typeof projReads.private[key] === "number"
+            ? projReads.private[key]
+            : 0;
+        if (privateLen > lastPrivate) {
+          projReads.private[key] = privateLen;
+          saveChatReads(reads);
+        }
+        updateChatBadges();
+      }
+
+      function syncChatSendRow() {
+        if (workspaceReadOnly) {
+          chatInput.disabled = true;
+          sendBtn.disabled = true;
+          chatInput.placeholder = "Archived — viewing only.";
+          return;
+        }
+        sendBtn.disabled = chatInput.disabled;
+      }
+
+      async function renderChatMessages() {
+        chatThread.innerHTML = "";
+        let messages = [];
+
+        if (chatMode === "group") {
+          messages = chatDatabase.group;
+          chatInput.placeholder = "Message group...";
+          chatInput.disabled = false;
+        } else if (privateChatTargetId) {
+          const userIds = [chatSid, privateChatTargetId].sort();
+          const privateChatKey = userIds.join("_");
+          if (!chatDatabase.private[privateChatKey])
+            chatDatabase.private[privateChatKey] = [];
+          messages = chatDatabase.private[privateChatKey];
+          chatInput.placeholder = "Message private...";
+          chatInput.disabled = false;
+
+          const header = document.createElement("div");
+          header.className = "ws-chat-private-header";
+          const target = members.find((m) => m.id === privateChatTargetId);
+          header.innerHTML = `Chatting with <b>${escapeHtml(target?.name || "member")}</b>`;
+          chatThread.appendChild(header);
+        } else {
+          chatThread.innerHTML =
+            '<div class="ws-chat-placeholder is-instructional"><div class="ws-chat-hint-icon">💬</div><div class="ws-chat-hint-text">Select a member from the <b>Members</b> list to start a private chat.</div></div>';
+          chatInput.placeholder = "Select a member";
+          chatInput.disabled = true;
+          updateChatBadges();
+          syncChatSendRow();
+          return;
+        }
+
+        if (!messages.length) {
+          chatThread.innerHTML += '<div class="ws-chat-placeholder">No messages yet.</div>';
+          markReadForCurrentMode();
+          syncChatSendRow();
+          return;
+        }
+
+        for (const msg of messages) {
+          const isMe = msg.userId === storedName;
+          const msgEl = document.createElement("div");
+          msgEl.className = `ws-chat-message ${isMe ? "is-me" : "is-other"}`;
+          const senderLabel = isMe ? `${msg.userId} (You)` : msg.userId;
+          let displayText = "";
+          if (chatMode === "group" && msg.encrypted) {
+            try {
+              displayText = await decryptGroupPayload(msg.encrypted);
+            } catch (e) {
+              displayText = "[Unable to decrypt]";
+            }
+          } else if (chatMode === "private" && msg.encrypted) {
+            try {
+              displayText = await decryptPrivatePayload(msg.encrypted);
+            } catch (e) {
+              displayText = "[Unable to decrypt]";
+            }
+          } else {
+            displayText = "[Unsupported message format]";
+          }
+          msgEl.innerHTML = `<div class="ws-chat-sender">${escapeHtml(
+            senderLabel
+          )}</div><div class="ws-chat-content">${escapeHtml(displayText || "")}</div>`;
+          chatThread.appendChild(msgEl);
+        }
+        chatThread.scrollTop = chatThread.scrollHeight;
+        markReadForCurrentMode();
+        syncChatSendRow();
+      }
+
+      function setChatMode(mode) {
+        chatMode = mode;
+        privateChatTargetId = null;
+        chatModeBtns.forEach((btn) => {
+          btn.classList.toggle("is-active", btn.dataset.mode === mode);
+        });
+
+        const membersBox = document.querySelector(".ws-members-box");
+        membersBox.classList.toggle("is-selection-mode", mode === "private");
+        membersList.querySelectorAll(".ws-member-item").forEach((el) =>
+          el.classList.remove("is-active")
+        );
+        membersList.querySelectorAll(".ws-member-notice-btn").forEach((btn) => {
+          btn.style.display = mode === "private" ? "inline-flex" : "none";
+        });
+        renderChatMessages();
+      }
+
+      chatModeBtns.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          setChatMode(this.dataset.mode);
+        });
+      });
+
+      membersList.addEventListener("click", function (e) {
+        if (chatMode !== "private") return;
+        const targetEl = e.target.closest(".ws-member-item");
+        if (targetEl && targetEl.dataset.userId) {
+          privateChatTargetId = targetEl.dataset.userId;
+          membersList.querySelectorAll(".ws-member-item").forEach((child) =>
+            child.classList.remove("is-active")
+          );
+          targetEl.classList.add("is-active");
+          renderChatMessages();
+        }
+      });
+
+      async function sendMessage() {
+        if (workspaceReadOnly) return;
+        if (!currentUserPrivateKey || !currentUserSid) {
+          window.alert("E2EE identity is not ready. Please refresh and try again.");
+          return;
+        }
+        const message = chatInput.value.trim();
+        if (!message) return;
+        const newMessage = { userId: storedName, senderSid: currentUserSid };
+        try {
+          if (chatMode === "group") {
+            newMessage.encrypted = await encryptGroupPayload(message);
+            chatDatabase.group.push(newMessage);
+          } else if (privateChatTargetId) {
+            const userIds = [currentUserSid, privateChatTargetId].sort();
+            const key = userIds.join("_");
+            if (!chatDatabase.private[key]) chatDatabase.private[key] = [];
+            newMessage.encrypted = await encryptPrivatePayload(
+              message,
+              privateChatTargetId
+            );
+            chatDatabase.private[key].push(newMessage);
+          } else {
+            return;
+          }
+        } catch (err) {
+          window.alert(
+            "Message cannot be encrypted yet. Let all members open this workspace once to publish E2EE keys, then retry."
+          );
+          return;
+        }
+        if (project) {
+          project.chat = chatDatabase;
+          saveProjects(allProjects);
+        }
+        chatInput.value = "";
+        renderChatMessages();
+        updateChatBadges();
+      }
+
+      sendBtn.addEventListener("click", () => {
+        sendMessage();
+      });
+      chatInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Tabs
+      function setActiveTab(view) {
+        tabs.forEach((t) => t.classList.toggle("is-active", t.dataset.view === view));
+        views.forEach((v) => v.classList.toggle("is-active", v.dataset.view === view));
+      }
+      tabs.forEach((t) => t.addEventListener("click", () => setActiveTab(t.dataset.view)));
+
+      // Information Hub state (persisted on project.workspaceUpdates)
+      function cloneHubUpdates(arr) {
+        return Array.isArray(arr)
+          ? arr.map((u) => ({
+              id: String(u.id || ""),
+              date: String(u.date || ""),
+              by: String(u.by || ""),
+              content: String(u.content || ""),
+              fileName: u.fileName != null ? String(u.fileName) : null,
+              fileData:
+                u.fileData != null && String(u.fileData).startsWith("data:")
+                  ? String(u.fileData)
+                  : null,
+            }))
+          : [];
+      }
+
+      let updates = cloneHubUpdates(project?.workspaceUpdates);
+      let editingUpdateId = null;
+
+      function persistHubUpdates() {
+        if (!project || workspaceReadOnly) return;
+        project.workspaceUpdates = cloneHubUpdates(updates);
+        saveProjects(allProjects);
+      }
+
+      function formatDate(d) {
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const yy = String(d.getFullYear()).slice(-2);
+        return `${dd}/${mm}/${yy}`;
+      }
+
+      function getSelectedFileName() {
+        const file = infoFileEl.files && infoFileEl.files[0];
+        return file ? file.name : null;
+      }
+
+      uploadBtn.addEventListener("click", function () {
+        infoFileEl.click();
+      });
+
+      infoFileEl.addEventListener("change", function () {
+        const fileName = getSelectedFileName();
+        selectedFileNameEl.textContent = fileName
+          ? `Selected file: ${fileName}`
+          : "No file selected.";
+      });
+
+      function closeModal() {
+        modalOverlay.hidden = true;
+      }
+
+      modalCloseBtn.addEventListener("click", closeModal);
+      modalOverlay.addEventListener("click", function (e) {
+        if (e.target === modalOverlay) closeModal();
+      });
+
+      function openModal(mode, update) {
+        if (workspaceReadOnly) return;
+        modalOverlay.hidden = false;
+        if (mode === "new") {
+          modalTitle.textContent = "New Info";
+          modalSubmitBtn.textContent = "Save";
+          editingUpdateId = null;
+          infoForm.reset();
+          selectedFileNameEl.textContent = "No file selected.";
+        } else {
+          modalTitle.textContent = "Amend";
+          modalSubmitBtn.textContent = "Save";
+          editingUpdateId = update.id;
+          infoContentEl.value = update.content || "";
+          selectedFileNameEl.textContent = update.fileName
+            ? `Current file: ${update.fileName}`
+            : "No file selected.";
+          infoFileEl.value = "";
+        }
+      }
+
+      newInfoBtn.addEventListener("click", function () {
+        if (workspaceReadOnly) return;
+        openModal("new");
+      });
+
+      function applyReadOnlyChrome() {
+        workspaceReadOnly = !!(project && project.status === "archived");
+        const main = document.querySelector(".ws-main");
+        if (main) main.classList.toggle("is-readonly", workspaceReadOnly);
+        newInfoBtn.hidden = workspaceReadOnly;
+        newTaskBtn.hidden = workspaceReadOnly;
+        const canShowArchive =
+          project &&
+          project.status !== "archived" &&
+          project.status !== "pending";
+        archiveBtn.hidden = !canShowArchive;
+        archivedBadge.hidden = !workspaceReadOnly;
+      }
+
+      archiveBtn.addEventListener("click", function () {
+        if (workspaceReadOnly || !project) return;
+        const ok = window.confirm(
+          "Archive this group? After archiving, you will not be able to add or change content in this workspace (read-only view only). Continue?"
+        );
+        if (!ok) return;
+        project.status = "archived";
+        saveProjects(allProjects);
+        applyReadOnlyChrome();
+        renderUpdates();
+        renderTasks();
+        renderChatMessages();
+        updateChatBadges();
+      });
+
+      function renderUpdates() {
+        updatesList.innerHTML = "";
+        if (!updates.length) {
+          const empty = document.createElement("div");
+          empty.className = "ws-updates-empty";
+          empty.textContent = "No updates yet.";
+          updatesList.appendChild(empty);
+          return;
+        }
+
+        updates.forEach((u) => {
+          const card = document.createElement("div");
+          card.className = "ws-update-card";
+          const actionsBlock = workspaceReadOnly
+            ? ""
+            : `
+              <div class="ws-update-actions">
+                <button class="ws-amend-btn" type="button" data-id="${escapeHtml(u.id)}">Amend</button>
+                <button class="ws-delete-small-btn ws-info-delete-btn" data-id="${escapeHtml(u.id)}">×</button>
+              </div>
+            `;
+          card.innerHTML = `
+            <div class="ws-update-top">
+              <div class="ws-update-meta">
+                <div>Date: ${escapeHtml(u.date)}</div>
+                <div>by: ${escapeHtml(u.by)}</div>
+              </div>
+              ${actionsBlock}
+            </div>
+            <div class="ws-update-section-label">Content</div>
+            <div class="ws-update-text">${escapeHtml(u.content || "")}</div>
+            <div class="ws-update-section-label">Relevant documents</div>
+            <div class="ws-update-file" data-update-id="${escapeHtml(u.id)}">
+              ${
+                u.fileName
+                  ? `<span class="ws-update-filename">${escapeHtml(u.fileName)}</span>
+                    <button class="ws-preview-btn" type="button" data-update-id="${escapeHtml(u.id)}" data-kind="preview">Open</button>
+                    <button class="ws-download-btn" type="button" data-update-id="${escapeHtml(u.id)}" data-kind="download">Download</button>`
+                  : "No file"
+              }
+            </div>
+          `;
+
+          if (!workspaceReadOnly) {
+            card.querySelector(".ws-amend-btn").addEventListener("click", function () {
+              const id = this.dataset.id;
+              const update = updates.find((x) => x.id === id);
+              if (!update) return;
+              openModal("edit", update);
+            });
+
+            card.querySelector(".ws-info-delete-btn").addEventListener("click", function () {
+              const ok = window.confirm("Are you sure you want to delete this info?");
+              if (!ok) return;
+              const doubleCheck = window.confirm("Are you REALLY sure? This action cannot be undone.");
+              if (!doubleCheck) return;
+              const id = this.dataset.id;
+              updates = updates.filter((x) => x.id !== id);
+              persistHubUpdates();
+              renderUpdates();
+            });
+          }
+
+          if (u.fileName) {
+            const upd = updates.find((x) => x.id === u.id);
+            const previewBtn = card.querySelector(".ws-preview-btn");
+            const downloadBtn = card.querySelector(".ws-download-btn");
+            const data = upd?.fileData;
+            const hasData = data && String(data).startsWith("data:");
+            if (previewBtn) {
+              previewBtn.hidden = !hasData;
+              previewBtn.disabled = !hasData;
+              if (hasData) {
+                previewBtn.addEventListener("click", function () {
+                  window.open(data, "_blank", "noopener,noreferrer");
+                });
+              }
+            }
+            if (downloadBtn) {
+              downloadBtn.disabled = !hasData;
+              downloadBtn.title = hasData
+                ? "Download this file"
+                : "File was saved before download support was added";
+              if (hasData) {
+                downloadBtn.addEventListener("click", function () {
+                  const a = document.createElement("a");
+                  a.href = data;
+                  a.download = upd.fileName || "document";
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                });
+              }
+            }
+          }
+
+          updatesList.appendChild(card);
+        });
+      }
+
+      infoForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        if (workspaceReadOnly) return;
+        const content = infoContentEl.value.trim();
+        if (!content) return;
+        const fileName = getSelectedFileName();
+        const file = infoFileEl.files && infoFileEl.files[0];
+        let nextFileData = null;
+
+        if (file) {
+          try {
+            nextFileData = await readFileAsDataURL(file);
+          } catch (err) {
+            return;
+          }
+        }
+
+        if (editingUpdateId) {
+          const idx = updates.findIndex((x) => x.id === editingUpdateId);
+          if (idx !== -1) {
+            const prev = updates[idx];
+            updates[idx] = {
+              ...prev,
+              content,
+              fileName: fileName || prev.fileName || null,
+              fileData: nextFileData || prev.fileData || null,
+            };
+          }
+        } else {
+          updates.unshift({
+            id: `u_${Date.now()}`,
+            date: formatDate(new Date()),
+            by: storedName,
+            content,
+            fileName: fileName || null,
+            fileData: nextFileData,
+          });
+        }
+        persistHubUpdates();
+        closeModal();
+        renderUpdates();
+      });
+
+      // --- Task Implementation ---
+      let tasks = Array.isArray(project?.tasks) ? [...project.tasks] : [];
+
+      if (
+        project &&
+        project.status !== "archived" &&
+        tasks.length === 0 &&
+        Array.isArray(project.members)
+      ) {
+        project.members.forEach((m) => {
+          if (Array.isArray(m.tasks)) {
+            m.tasks.forEach((t) => {
+              tasks.push({
+                id: t.id || `t_${Date.now()}_${Math.random()}`,
+                by: project.leaderFullName || "Leader",
+                title: t.title || "Untitled Task",
+                content: t.content || "",
+                assignedMembers: [m.fullName || "member"],
+                status: "in_progress", // Tasks from project creation don't need confirmation
+                deadline: t.ddl || "",
+                steps: Array.isArray(t.steps) ? t.steps.map(s => ({ content: s.content || s, id: s.id || `s_${Date.now()}_${Math.random()}` })) : [],
+              });
+            });
+          }
+        });
+        if (tasks.length > 0) {
+          project.tasks = tasks;
+          saveProjects(allProjects);
+        }
+      }
+
+      let editingTaskId = null;
+      let completeTaskId = null;
+      let reassignTaskId = null;
+      let taskModalSteps = [];
+      let archivedVisible = false;
+
+      function persistTasks() {
+        if (project && !workspaceReadOnly) {
+          project.tasks = tasks;
+          saveProjects(allProjects);
+        }
+      }
+
+      function closeTaskModal() {
+        taskModalOverlay.hidden = true;
+        taskErrorEl.hidden = true;
+      }
+
+      taskModalCloseBtn.addEventListener("click", closeTaskModal);
+      taskModalOverlay.addEventListener("click", function (e) {
+        if (e.target === taskModalOverlay) closeTaskModal();
+      });
+
+      function renderProgress() {
+        const completed = tasks.filter((t) => t.status === "completed").length;
+        const ongoing = tasks.filter(
+          (t) =>
+            t.status === "in_progress" ||
+            t.status === "pending" ||
+            t.status === "partially_completed"
+        ).length;
+        completedCountEl.textContent = String(completed);
+        ongoingCountEl.textContent = String(ongoing);
+      }
+
+      function deleteTask(id) {
+        if (workspaceReadOnly) return;
+        const ok = window.confirm("Are you sure you want to delete this task?");
+        if (!ok) return;
+        const doubleCheck = window.confirm("Are you REALLY sure you want to delete this task? This action cannot be undone.");
+        if (!doubleCheck) return;
+        tasks = tasks.filter((t) => t.id !== id);
+        persistTasks();
+        renderTasks();
+      }
+
+      function updateTaskStatus(id, newStatus) {
+        if (workspaceReadOnly) return;
+        const idx = tasks.findIndex((t) => t.id === id);
+        if (idx !== -1) {
+          tasks[idx].status = newStatus;
+          persistTasks();
+          renderTasks();
+        }
+      }
+
+      function resetTaskCompleteForm() {
+        taskCompleteFileEl.value = "";
+        taskCompleteFileLabel.textContent = "No file selected.";
+        taskCompleteDescEl.value = "";
+        taskCompleteErrorEl.hidden = true;
+        const fullRadio = document.querySelector(
+          'input[name="wsTaskCompleteType"][value="full"]'
+        );
+        if (fullRadio) fullRadio.checked = true;
+      }
+
+      function openTaskCompleteModal(taskId) {
+        if (workspaceReadOnly) return;
+        const t = tasks.find((x) => x.id === taskId);
+        if (
+          !t ||
+          (t.status !== "in_progress" && t.status !== "partially_completed")
+        ) {
+          return;
+        }
+        completeTaskId = taskId;
+        resetTaskCompleteForm();
+        taskCompleteModalOverlay.hidden = false;
+      }
+
+      function closeTaskCompleteModal() {
+        taskCompleteModalOverlay.hidden = true;
+        completeTaskId = null;
+      }
+
+      taskCompleteCloseBtn.addEventListener("click", closeTaskCompleteModal);
+      taskCompleteModalOverlay.addEventListener("click", function (e) {
+        if (e.target === taskCompleteModalOverlay) closeTaskCompleteModal();
+      });
+
+      taskCompleteUploadBtn.addEventListener("click", function () {
+        taskCompleteFileEl.click();
+      });
+      taskCompleteFileEl.addEventListener("change", function () {
+        const f = taskCompleteFileEl.files && taskCompleteFileEl.files[0];
+        taskCompleteFileLabel.textContent = f
+          ? `Selected: ${f.name}`
+          : "No file selected.";
+      });
+
+      taskCompleteSubmitBtn.addEventListener("click", async function () {
+        if (workspaceReadOnly || !completeTaskId) return;
+        const idx = tasks.findIndex((t) => t.id === completeTaskId);
+        if (idx === -1) return;
+
+        const file = taskCompleteFileEl.files && taskCompleteFileEl.files[0];
+        const summary = taskCompleteDescEl.value.trim();
+        const mode =
+          document.querySelector('input[name="wsTaskCompleteType"]:checked')
+            ?.value || "full";
+
+        taskCompleteErrorEl.hidden = true;
+
+        if (!file && !summary) {
+          taskCompleteErrorEl.textContent =
+            "Please upload a file and/or describe completed work (at least one is required).";
+          taskCompleteErrorEl.hidden = false;
+          return;
+        }
+
+        let uploadedData = null;
+        let uploadedName = null;
+        if (file) {
+          try {
+            uploadedData = await readFileAsDataURL(file);
+            uploadedName = file.name;
+          } catch (e) {
+            taskCompleteErrorEl.textContent = "Could not read the file.";
+            taskCompleteErrorEl.hidden = false;
+            return;
+          }
+        }
+
+        const t = tasks[idx];
+        delete t.completionDescription;
+        delete t.completionFileName;
+        delete t.completionFileData;
+
+        if (mode === "full") {
+          t.status = "completed";
+          delete t.completedPart;
+          delete t.completedPartFileName;
+          delete t.completedPartFileData;
+        } else {
+          t.status = "partially_completed";
+          const summaryChunk = summary.trim();
+          const prev = (t.completedPart || "").trim();
+          if (summaryChunk) {
+            t.completedPart = prev
+              ? `${prev}\n\n---\n${summaryChunk}`
+              : summaryChunk;
+          } else if (!prev) {
+            t.completedPart = "";
+          }
+          if (
+            uploadedName &&
+            uploadedData &&
+            String(uploadedData).startsWith("data:")
+          ) {
+            t.completedPartFileName = uploadedName;
+            t.completedPartFileData = uploadedData;
+          }
+        }
+
+        persistTasks();
+        closeTaskCompleteModal();
+        closeTaskModal();
+        renderTasks();
+      });
+
+      function renderTasks() {
+        tasksList.innerHTML = "";
+        archivedTasksList.innerHTML = "";
+        
+        const activeTasks = tasks.filter(t => t.status !== "completed");
+        const completedTasks = tasks.filter(t => t.status === "completed");
+
+        if (!activeTasks.length) {
+          tasksList.innerHTML = '<div class="ws-updates-empty">No active tasks.</div>';
+        } else {
+          activeTasks.forEach((t) => renderTaskCard(t, tasksList));
+        }
+
+        if (completedTasks.length > 0) {
+          archivedTasksTitle.hidden = false;
+          archivedTasksList.hidden = !archivedVisible;
+          archivedTasksList.style.display = archivedVisible ? "flex" : "none";
+          toggleArchivedBtn.textContent = archivedVisible ? "Hide" : "Show";
+          completedTasks.forEach((t) => renderTaskCard(t, archivedTasksList));
+        } else {
+          archivedTasksTitle.hidden = true;
+          archivedTasksList.hidden = true;
+          archivedTasksList.style.display = "none";
+        }
+        
+        renderProgress();
+      }
+
+      toggleArchivedBtn.addEventListener("click", () => {
+        archivedVisible = !archivedVisible;
+        renderTasks();
+      });
+
+      function renderTaskCard(t, container) {
+        const card = document.createElement("div");
+        card.className = "ws-task-card";
+
+        let statusLabel = "";
+        let statusClass = "";
+        let actionButtons = "";
+
+        const assignees = Array.isArray(t.assignedMembers)
+          ? t.assignedMembers
+          : [];
+        if (t.status === "pending") {
+          statusLabel = "Pending";
+          statusClass = "ws-status-pending";
+          if (!workspaceReadOnly && assignees.includes(storedName)) {
+            actionButtons += `<button class="ws-task-action-btn ws-confirm-btn" data-id="${t.id}">Confirm</button>`;
+          }
+        } else if (t.status === "in_progress") {
+          statusLabel = "Ongoing";
+          statusClass = "ws-status-ongoing";
+          if (!workspaceReadOnly && assignees.includes(storedName)) {
+            actionButtons += `<button class="ws-task-action-btn ws-complete-btn" data-id="${t.id}">Done</button>`;
+          }
+        } else if (t.status === "partially_completed") {
+          statusLabel = "Partially completed";
+          statusClass = "ws-status-partial";
+          if (!workspaceReadOnly && assignees.includes(storedName)) {
+            actionButtons += `<button class="ws-task-action-btn ws-complete-btn" data-id="${t.id}">Done</button>`;
+          }
+        } else {
+          statusLabel = "Completed";
+          statusClass = "ws-status-completed";
+        }
+
+        let postAssigneesExtras = "";
+        if (t.status === "partially_completed") {
+          const partText = (t.completedPart || "").trim();
+          const hasPartFile =
+            t.completedPartFileName &&
+            t.completedPartFileData &&
+            String(t.completedPartFileData).startsWith("data:");
+          postAssigneesExtras += `<div class="ws-update-section-label">Completed part</div>`;
+          if (partText) {
+            postAssigneesExtras += `<div class="ws-update-text">${escapeHtml(
+              t.completedPart
+            )}</div>`;
+          }
+          if (!partText && !hasPartFile) {
+            postAssigneesExtras += `<div class="ws-update-text">—</div>`;
+          }
+          if (hasPartFile) {
+            postAssigneesExtras += `<div class="ws-update-file"><span class="ws-task-completion-file-slot" data-slot-task="${escapeHtml(
+              t.id
+            )}"></span></div>`;
+          }
+        }
+
+        const reassignPendingBadge = t.reassignPending
+          ? `<span class="ws-status-badge ws-status-reassign-pending">Pending reassign</span>`
+          : "";
+
+        const reassignBtnHtml =
+          !workspaceReadOnly &&
+          t.status !== "completed" &&
+          !t.reassignPending
+            ? `<button type="button" class="ws-task-reassign-btn" data-reassign-id="${escapeHtml(t.id)}">Reassign</button>`
+            : "";
+
+        const taskHeaderRight = workspaceReadOnly
+          ? ""
+          : `
+            <div class="ws-task-header-right">
+              <button class="ws-amend-btn ws-task-edit-btn" data-id="${t.id}">Edit</button>
+              <button class="ws-delete-small-btn ws-task-delete-btn" data-id="${t.id}">×</button>
+            </div>
+          `;
+
+        const ddlHtml = t.deadline ? `<div class="ws-update-meta"><div>Deadline: ${escapeHtml(fmtDdl(t.deadline))}</div></div>` : "";
+        const stepsHtml = (Array.isArray(t.steps) && t.steps.length > 0) 
+          ? `<div class="ws-update-section-label">Steps</div><div class="ws-task-steps">${t.steps.map((s, i) => `<div>${i+1}. ${escapeHtml(s.content || s)}</div>`).join("")}</div>` 
+          : "";
+
+        card.innerHTML = `
+          <div class="ws-update-top">
+            <div class="ws-task-header-left">
+              <span class="ws-task-title-text">${escapeHtml(t.title)}</span>
+              <span class="ws-status-badge ${statusClass}">${statusLabel}</span>
+              ${reassignPendingBadge}
+            </div>
+            ${taskHeaderRight}
+          </div>
+          <div class="ws-update-meta"><div>Created by: ${escapeHtml(t.by)}</div></div>
+          ${ddlHtml}
+          <div class="ws-update-section-label">Task Description</div>
+          <div class="ws-update-text">${escapeHtml(t.content)}</div>
+          ${stepsHtml}
+          <div class="ws-update-section-label">Assigned Members</div>
+          <div class="ws-task-members">
+            ${assignees
+              .map((m) => `<span class="ws-task-member-tag">${escapeHtml(m)}</span>`)
+              .join("")}
+          </div>
+          ${postAssigneesExtras}
+          <div class="ws-task-card-footer">
+            <div class="ws-task-actions-row">${actionButtons}</div>
+            ${reassignBtnHtml}
+          </div>
+        `;
+
+        if (!workspaceReadOnly) {
+          card.querySelector(".ws-task-delete-btn").addEventListener("click", () => deleteTask(t.id));
+          card.querySelector(".ws-task-edit-btn").addEventListener("click", () => openTaskModal("edit", t));
+          const confirmBtn = card.querySelector(".ws-confirm-btn");
+          if (confirmBtn) confirmBtn.addEventListener("click", () => updateTaskStatus(t.id, "in_progress"));
+          const completeBtn = card.querySelector(".ws-complete-btn");
+          if (completeBtn)
+            completeBtn.addEventListener("click", () =>
+              openTaskCompleteModal(t.id)
+            );
+          const reassignBtn = card.querySelector(".ws-task-reassign-btn");
+          if (reassignBtn)
+            reassignBtn.addEventListener("click", () => openReassignModal(t.id));
+        }
+
+        container.appendChild(card);
+
+        card.querySelectorAll(".ws-task-completion-file-slot").forEach((slot) => {
+          const tid = slot.getAttribute("data-slot-task");
+          if (!tid || String(tid) !== String(t.id)) return;
+          const fn =
+            t.status === "partially_completed"
+              ? t.completedPartFileName
+              : t.completionFileName;
+          const fd =
+            t.status === "partially_completed"
+              ? t.completedPartFileData
+              : t.completionFileData;
+          if (!fn) return;
+          if (fd && String(fd).startsWith("data:")) {
+            slot.innerHTML = `<span class="ws-update-filename">${escapeHtml(
+              fn
+            )}</span>
+              <button type="button" class="ws-preview-btn ws-tc-preview">Open</button>
+              <button type="button" class="ws-download-btn ws-tc-dl">Download</button>`;
+            const prev = slot.querySelector(".ws-tc-preview");
+            const dl = slot.querySelector(".ws-tc-dl");
+            if (prev)
+              prev.addEventListener("click", function () {
+                window.open(fd, "_blank", "noopener,noreferrer");
+              });
+            if (dl)
+              dl.addEventListener("click", function () {
+                const a = document.createElement("a");
+                a.href = fd;
+                a.download = fn || "document";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+              });
+          } else {
+            slot.textContent = fn;
+          }
+        });
+      }
+
+      function fmtDdl(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return iso;
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
+          d.getHours()
+        )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+
+      function isoToDatetimeLocalValue(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return "";
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+          d.getHours()
+        )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+
+      function renderTaskModalSteps() {
+        taskStepsListEl.innerHTML = "";
+        taskModalSteps.forEach((s, idx) => {
+          const div = document.createElement("div");
+          div.className = "ws-modal-step-item";
+          div.style.display = "flex";
+          div.style.gap = "8px";
+          div.style.marginBottom = "8px";
+          
+          const input = document.createElement("input");
+          input.className = "ws-modal-input";
+          input.value = s.content || "";
+          input.placeholder = `Step ${idx + 1}`;
+          input.addEventListener("input", (e) => {
+            s.content = e.target.value;
+          });
+          
+          const delBtn = document.createElement("button");
+          delBtn.className = "ws-delete-small-btn";
+          delBtn.type = "button";
+          delBtn.textContent = "×";
+          delBtn.addEventListener("click", () => {
+            taskModalSteps.splice(idx, 1);
+            renderTaskModalSteps();
+          });
+          
+          div.appendChild(input);
+          div.appendChild(delBtn);
+          taskStepsListEl.appendChild(div);
+        });
+      }
+
+      taskAddStepBtn.addEventListener("click", () => {
+        taskModalSteps.push({ content: "", id: `s_${Date.now()}_${Math.random()}` });
+        renderTaskModalSteps();
+      });
+
+      function openTaskModal(mode = "new", task = null) {
+        if (workspaceReadOnly) return;
+        taskModalOverlay.hidden = false;
+        taskForm.reset();
+        taskErrorEl.hidden = true;
+        taskModalActionsRow.hidden = true;
+        taskModalConfirmBtn.hidden = true;
+        taskModalDoneBtn.hidden = true;
+        taskModalSteps = [];
+
+        taskMembersSelect.innerHTML = "";
+        members.forEach((m) => {
+          const opt = document.createElement("option");
+          opt.value = m.name;
+          opt.textContent = m.name;
+          taskMembersSelect.appendChild(opt);
+        });
+
+        if (mode === "edit" && task) {
+          editingTaskId = task.id;
+          document.getElementById("wsTaskModalTitle").textContent = "Edit Task";
+          taskTitleEl.value = task.title;
+          taskContentEl.value = task.content;
+          taskDeadlineEl.value = isoToDatetimeLocalValue(task.deadline);
+          taskModalSteps = Array.isArray(task.steps) ? [...task.steps] : [];
+          
+          const am = Array.isArray(task.assignedMembers)
+            ? task.assignedMembers
+            : [];
+          
+          // Hide selection and show fixed assignees
+          taskMembersLabel.hidden = true;
+          taskMembersSelect.hidden = true;
+          fixedAssigneeArea.hidden = false;
+          fixedAssigneeList.innerHTML = am.map(m => `<span class="ws-task-member-tag">${escapeHtml(m)}</span>`).join("");
+
+          if (am.includes(storedName)) {
+            if (task.status === "pending") {
+              taskModalActionsRow.hidden = false;
+              taskModalConfirmBtn.hidden = false;
+            } else if (
+              task.status === "in_progress" ||
+              task.status === "partially_completed"
+            ) {
+              taskModalActionsRow.hidden = false;
+              taskModalDoneBtn.hidden = false;
+            }
+          }
+        } else {
+          editingTaskId = null;
+          document.getElementById("wsTaskModalTitle").textContent = "New Task";
+          
+          // Show selection and hide fixed assignees
+          taskMembersLabel.hidden = false;
+          taskMembersSelect.hidden = false;
+          fixedAssigneeArea.hidden = true;
+          
+          taskDeadlineEl.value = "";
+          taskModalSteps = [];
+        }
+        renderTaskModalSteps();
+      }
+
+      taskModalConfirmBtn.addEventListener("click", () => {
+        if (workspaceReadOnly) return;
+        if (editingTaskId) {
+          updateTaskStatus(editingTaskId, "in_progress");
+          closeTaskModal();
+        }
+      });
+
+      taskModalDoneBtn.addEventListener("click", () => {
+        if (workspaceReadOnly) return;
+        if (editingTaskId) {
+          const tid = editingTaskId;
+          closeTaskModal();
+          openTaskCompleteModal(tid);
+        }
+      });
+
+      newTaskBtn.addEventListener("click", () => {
+        if (workspaceReadOnly) return;
+        openTaskModal("new");
+      });
+
+      taskForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (workspaceReadOnly) return;
+        const title = taskTitleEl.value.trim();
+        const content = taskContentEl.value.trim();
+        const deadline = taskDeadlineEl.value;
+        const selectedOptions = editingTaskId ? [] : Array.from(taskMembersSelect.selectedOptions).map((opt) => opt.value);
+        
+        if (!title || !content || !deadline || !taskModalSteps.length || taskModalSteps.length < 2 || !taskModalSteps.every(s => s.content.trim())) {
+          taskErrorEl.textContent = "Please provide all details and at least two steps.";
+          taskErrorEl.hidden = false;
+          return;
+        }
+        if (!editingTaskId && !selectedOptions.length) {
+          taskErrorEl.textContent = "Please select at least one member.";
+          taskErrorEl.hidden = false;
+          return;
+        }
+
+        if (editingTaskId) {
+          const idx = tasks.findIndex((t) => t.id === editingTaskId);
+          if (idx !== -1) {
+            tasks[idx].title = title;
+            tasks[idx].content = content;
+            tasks[idx].deadline = new Date(deadline).toISOString();
+            tasks[idx].steps = taskModalSteps.map(s => ({ ...s, content: s.content.trim() }));
+            // assignedMembers remains unchanged because select is disabled
+          }
+        } else {
+          tasks.unshift({
+            id: `t_${Date.now()}`,
+            by: storedName,
+            title,
+            content,
+            deadline: new Date(deadline).toISOString(),
+            steps: taskModalSteps.map(s => ({ ...s, content: s.content.trim() })),
+            assignedMembers: selectedOptions,
+            status: "in_progress", // New tasks also skip pending status to match user request for project tasks
+          });
+        }
+
+        persistTasks();
+        closeTaskModal();
+        renderTasks();
+      });
+
+      function closeReassignModal() {
+        reassignModalOverlay.hidden = true;
+        reassignTaskId = null;
+      }
+
+      reassignModalCloseBtn.addEventListener("click", closeReassignModal);
+      reassignModalOverlay.addEventListener("click", function (e) {
+        if (e.target === reassignModalOverlay) closeReassignModal();
+      });
+
+      function openReassignModal(taskId) {
+        if (workspaceReadOnly) return;
+        const t = tasks.find((x) => x.id === taskId);
+        if (
+          !t ||
+          t.reassignPending ||
+          t.status === "completed"
+        )
+          return;
+        reassignTaskId = taskId;
+        reassignMemberSelect.innerHTML = "";
+        members.forEach((m) => {
+          const opt = document.createElement("option");
+          opt.value = m.id;
+          opt.textContent = m.name;
+          reassignMemberSelect.appendChild(opt);
+        });
+        reassignModalOverlay.hidden = false;
+      }
+
+      reassignSubmitBtn.addEventListener("click", function () {
+        if (!reassignTaskId || workspaceReadOnly) return;
+        const sid = reassignMemberSelect.value;
+        const mem = members.find((m) => String(m.id) === String(sid));
+        if (!mem) return;
+        const t = tasks.find((x) => x.id === reassignTaskId);
+        if (!t || t.reassignPending) return;
+        t.reassignPending = {
+          requesterSid: String(accessSid || ""),
+          requesterName: storedName,
+          targetSid: String(mem.id),
+          targetName: mem.name,
+        };
+        persistTasks();
+        closeReassignModal();
+        renderTasks();
+      });
+
+      function renderReassignInboxContent() {
+        const mine = tasks.filter(
+          (t) =>
+            t.reassignPending &&
+            String(t.reassignPending.targetSid) === String(accessSid)
+        );
+        reassignInboxBody.innerHTML = "";
+        mine.forEach((t) => {
+          const row = document.createElement("div");
+          row.className = "ws-reassign-inbox-item";
+          row.innerHTML = `
+            <div class="ws-reassign-inbox-task-title">${escapeHtml(t.title)}</div>
+            <div class="ws-reassign-inbox-meta">From: ${escapeHtml(
+              t.reassignPending.requesterName || "Member"
+            )}</div>
+            <div class="ws-reassign-inbox-actions">
+              <button type="button" class="ws-task-action-btn ws-confirm-btn" data-task-id="${escapeHtml(
+                t.id
+              )}">Accept</button>
+              <button type="button" class="ws-task-action-btn ws-reject-reassign-btn" data-task-id="${escapeHtml(
+                t.id
+              )}">Reject</button>
+            </div>
+          `;
+          row.querySelector(".ws-confirm-btn").addEventListener("click", function () {
+            acceptTaskReassign(t.id);
+          });
+          row
+            .querySelector(".ws-reject-reassign-btn")
+            .addEventListener("click", function () {
+              rejectTaskReassign(t.id);
+            });
+          reassignInboxBody.appendChild(row);
+        });
+      }
+
+      function acceptTaskReassign(taskId) {
+        const t = tasks.find((x) => x.id === taskId);
+        if (!t || !t.reassignPending) return;
+        const targetName = t.reassignPending.targetName;
+        t.assignedMembers = [targetName];
+        delete t.reassignPending;
+        persistTasks();
+        renderTasks();
+        renderReassignInboxContent();
+        const still = tasks.some(
+          (x) =>
+            x.reassignPending &&
+            String(x.reassignPending.targetSid) === String(accessSid)
+        );
+        if (!still) reassignInboxOverlay.hidden = true;
+      }
+
+      function rejectTaskReassign(taskId) {
+        const t = tasks.find((x) => x.id === taskId);
+        if (!t || !t.reassignPending) return;
+        pushReassignRejectNotice({
+          projectId,
+          requesterSid: String(t.reassignPending.requesterSid || ""),
+          rejectorName: storedName,
+          taskTitle: t.title || "Task",
+        });
+        delete t.reassignPending;
+        persistTasks();
+        renderTasks();
+        renderReassignInboxContent();
+        const still = tasks.some(
+          (x) =>
+            x.reassignPending &&
+            String(x.reassignPending.targetSid) === String(accessSid)
+        );
+        if (!still) reassignInboxOverlay.hidden = true;
+      }
+
+      function flushReassignRejectNoticesForRequester() {
+        if (!accessSid) return;
+        let rows = loadReassignRejectNotices();
+        const mine = rows.filter(
+          (r) =>
+            String(r.projectId) === String(projectId) &&
+            String(r.requesterSid) === String(accessSid)
+        );
+        if (!mine.length) return;
+        const msg = mine
+          .map(
+            (r) =>
+              `${r.rejectorName} rejected your reassignment request for “${r.taskTitle}”.`
+          )
+          .join("\n\n");
+        window.alert(msg);
+        rows = rows.filter(
+          (r) =>
+            !(
+              String(r.projectId) === String(projectId) &&
+              String(r.requesterSid) === String(accessSid)
+            )
+        );
+        saveReassignRejectNotices(rows);
+      }
+
+      function showReassignInboxIfNeeded() {
+        if (workspaceReadOnly || !accessSid) return;
+        const mine = tasks.filter(
+          (t) =>
+            t.reassignPending &&
+            String(t.reassignPending.targetSid) === String(accessSid)
+        );
+        if (!mine.length) return;
+        renderReassignInboxContent();
+        reassignInboxOverlay.hidden = false;
+      }
+
+      // First entering: show Information Hub.
+      applyReadOnlyChrome();
+      setActiveTab("hub");
+      renderUpdates();
+      renderTasks();
+      async function initializeWorkspace() {
+        try {
+          const identity = await getOrCreateCurrentUserIdentity();
+          currentUserPrivateKey = identity.privateKey;
+          if (project) {
+            if (!project.chatKeys || typeof project.chatKeys !== "object") {
+              project.chatKeys = {};
+            }
+            project.chatKeys[String(currentUserSid)] = {
+              publicJwk: identity.publicJwk,
+              updatedAt: Date.now(),
+            };
+            saveProjects(allProjects);
+          }
+        } catch (e) {
+          window.alert("Failed to initialize E2EE keys. Chat sending is disabled.");
+          chatInput.disabled = true;
+          sendBtn.disabled = true;
+        }
+
+        renderMembers();
+        setChatMode("group");
+        updateChatBadges();
+
+        flushReassignRejectNoticesForRequester();
+        showReassignInboxIfNeeded();
+      }
+
+      initializeWorkspace();
+
+      window.addEventListener("storage", function (e) {
+        if (e.key === READS_KEY) {
+          updateChatBadges();
+          return;
+        }
+        if (e.key === STORAGE_KEY) {
+          if (!e.newValue) return;
+          try {
+            const updatedProjects = JSON.parse(e.newValue);
+            const updatedProject = updatedProjects.find(
+              (p) => p.id === projectId
+            );
+            if (updatedProject && project) {
+              const prevStatus = project.status;
+              project.status = updatedProject.status;
+              applyReadOnlyChrome();
+              if (prevStatus !== project.status) {
+                renderUpdates();
+                renderTasks();
+                renderChatMessages();
+                updateChatBadges();
+              }
+            }
+            if (updatedProject && updatedProject.chat) {
+              chatDatabase = updatedProject.chat;
+              if (project) project.chat = chatDatabase;
+              renderChatMessages();
+              updateChatBadges();
+            }
+            if (updatedProject && Array.isArray(updatedProject.tasks) && project) {
+              tasks = [...updatedProject.tasks];
+              project.tasks = tasks;
+              renderTasks();
+              showReassignInboxIfNeeded();
+            }
+            if (
+              updatedProject &&
+              Array.isArray(updatedProject.workspaceUpdates) &&
+              project
+            ) {
+              updates = cloneHubUpdates(updatedProject.workspaceUpdates);
+              project.workspaceUpdates = cloneHubUpdates(updates);
+              renderUpdates();
+            }
+          } catch (err) {}
+        }
+      });
+    </script>
+    <script>
+      try {
+        const theme = localStorage.getItem("unicollab_theme");
+        document.body.dataset.theme = theme || "day";
+      } catch (e) {}
+    </script>
+  </body>
+</html>
+

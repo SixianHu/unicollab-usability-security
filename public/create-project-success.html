@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Assignment Successful</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="np-page">
+      <section class="np-modal np-success-modal" aria-label="Assignment success page">
+        <div class="np-success-content">
+          <div class="np-success-icon" aria-hidden="true">
+            <span class="np-success-check"></span>
+          </div>
+          <div class="np-success-text">
+            Group task assignment successful, waiting for members’ approval
+          </div>
+        </div>
+        <div class="np-success-actions">
+          <button id="npSuccessCompleteBtn" class="np-primary-btn" type="button">
+            Complete
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "unicollab_projects";
+
+      function loadProjects() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          return JSON.parse(raw) || [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveProjects(projects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const projectId = params.get("projectId");
+      const projects = loadProjects();
+      const project = projects.find((p) => p.id === projectId);
+
+      document
+        .getElementById("npSuccessCompleteBtn")
+        .addEventListener("click", function () {
+          if (project) {
+            project.status = "pending";
+            project.draftStep = 4;
+            if (!project.groupAgreement || typeof project.groupAgreement !== "object")
+              project.groupAgreement = {};
+            const sessionSid = localStorage.getItem("unicollab_studentId") || "";
+            const fin = String(sessionSid);
+            if (fin) {
+              project.creationFinalizerStudentId = fin;
+              project.groupAgreement[fin] = "agree";
+            }
+            saveProjects(projects);
+          }
+          window.location.href = "./dashboard.html";
+        });
+
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>
+

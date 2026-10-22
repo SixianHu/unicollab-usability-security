@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniCollab - Create New Project (Step 2)</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./session-ui.js" defer></script></head>
+  <body>
+    <div class="np-page">
+      <section class="np-modal" aria-label="Create new project wizard page 2">
+        <div class="np-modal-header">
+          <div class="np-modal-title">Creating A New Group Project</div>
+          <button id="npCloseX2" class="np-close-x" type="button" aria-label="Close">
+            X
+          </button>
+        </div>
+
+        <div class="np-stepbar" aria-label="Wizard steps">
+          <div class="np-step">
+            <div class="np-step-dot done"></div>
+            <div class="np-step-label">Basic Info</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot active"></div>
+            <div class="np-step-label">Add Member</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot"></div>
+            <div class="np-step-label">Assign Tasks</div>
+          </div>
+          <div class="np-step">
+            <div class="np-step-dot"></div>
+            <div class="np-step-label">Confirmation</div>
+          </div>
+        </div>
+
+        <div class="np-step2-body">
+          <div class="np-step2-title-row">
+            <div class="np-step2-title">Current Member</div>
+          </div>
+
+          <div class="np-step2-add-row">
+            <button id="npAddMemberBtn" class="np-add-member-btn" type="button">
+              Add Member
+            </button>
+          </div>
+
+          <div id="npMembersList" class="np-members-list"></div>
+        </div>
+
+        <div class="np-step2-note">
+          *Note: At least 2 members are required to successfully create a group.
+        </div>
+
+        <div class="np-bottom-actions">
+          <button id="npStep2BackBtn" class="np-secondary-btn" type="button">
+            Back
+          </button>
+          <button id="npStep2NextBtn" class="np-primary-btn" type="button">
+            Next
+          </button>
+        </div>
+      </section>
+
+      <!-- Close (X) save/delete popup -->
+      <div id="npCloseConfirmOverlay2" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">Do you want to save or delete this group?</div>
+          <div class="np-confirm-actions">
+            <button id="npCloseSaveBtn2" class="np-primary-btn" type="button">
+              Save
+            </button>
+            <button id="npCloseDeleteBtn2" class="np-danger-btn" type="button">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Close (X) delete confirmation -->
+      <div id="npCloseDeleteConfirmOverlay2" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">Are you sure you want to delete this group?</div>
+          <div class="np-confirm-actions">
+            <button id="npCloseDeleteYesBtn2" class="np-danger-btn" type="button">
+              Yes
+            </button>
+            <button id="npCloseDeleteNoBtn2" class="np-secondary-btn" type="button">
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back save/delete popup for Page 2 -->
+      <div id="npBackConfirmOverlay2" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">Do you want to save or delete all info filled on this page?</div>
+          <div class="np-confirm-actions">
+            <button id="npBackSaveBtn2" class="np-primary-btn" type="button">
+              Save
+            </button>
+            <button id="npBackDeleteBtn2" class="np-danger-btn" type="button">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back delete confirmation (delete page info only) -->
+      <div id="npBackDeleteConfirmOverlay2" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">Are you sure you want to delete all information filled on this page?</div>
+          <div class="np-confirm-actions">
+            <button id="npBackDeleteYesBtn2" class="np-danger-btn" type="button">
+              Yes
+            </button>
+            <button id="npBackDeleteNoBtn2" class="np-secondary-btn" type="button">
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add member popup -->
+      <div id="npAddMemberOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal np-add-member-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">Add Member</div>
+
+          <div class="np-member-form">
+            <div class="np-field">
+              <label for="npMemberName" class="np-label">
+                Name<span class="np-req" aria-hidden="true">*</span>
+              </label>
+              <input id="npMemberName" class="np-input" type="text" placeholder="Full Name" />
+            </div>
+
+            <div class="np-field">
+              <label for="npMemberSid" class="np-label">
+                Student ID<span class="np-req" aria-hidden="true">*</span>
+              </label>
+              <input id="npMemberSid" class="np-input" type="text" placeholder="Student ID" />
+            </div>
+
+            <div class="np-field">
+              <label for="npMemberRole" class="np-label">Position (optional)</label>
+              <select id="npMemberRole" class="np-input" aria-label="Member position">
+                <option value="">(default: Member)</option>
+                <option value="member">Member</option>
+                <option value="leader">Leader</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="npAddMemberError" class="np-center-error" hidden>
+            This user does not exist, please check the member information.
+          </div>
+
+          <div class="np-confirm-actions np-add-member-actions">
+            <button id="npAddMemberCancelBtn" class="np-secondary-btn" type="button">
+              Cancel
+            </button>
+            <button id="npAddMemberOkBtn" class="np-primary-btn" type="button">
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- At least 2 members popup -->
+      <div id="npTwoMembersOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div class="np-confirm-title">At least 2 people are required to form a group.</div>
+          <div class="np-confirm-actions">
+            <button id="npTwoMembersOkBtn" class="np-primary-btn" type="button">
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Remove single member confirmation -->
+      <div id="npRemoveMemberOverlay" class="np-confirm-overlay" hidden>
+        <div class="np-confirm-modal" role="dialog" aria-modal="true">
+          <div id="npRemoveMemberTitle" class="np-confirm-title">
+            Remove this member from the group?
+          </div>
+          <div class="np-confirm-subtle">
+            They will no longer see this project on their dashboard.
+          </div>
+          <div class="np-confirm-actions">
+            <button
+              id="npRemoveMemberYesBtn"
+              class="np-danger-btn"
+              type="button"
+            >
+              Yes
+            </button>
+            <button
+              id="npRemoveMemberNoBtn"
+              class="np-secondary-btn"
+              type="button"
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modify member role -->
+      <div id="npModifyMemberOverlay" class="np-confirm-overlay" hidden>
+        <div
+          class="np-confirm-modal np-add-member-modal"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div class="np-confirm-title">Modify position</div>
+          <div id="npModifyMemberSummary" class="np-modify-member-summary"></div>
+          <div class="np-member-form">
+            <div class="np-field">
+              <label for="npModifyMemberRoleSelect" class="np-label"
+                >Position</label
+              >
+              <select
+                id="npModifyMemberRoleSelect"
+                class="np-input"
+                aria-label="Member position"
+              >
+                <option value="member">Member</option>
+                <option value="leader">Leader</option>
+              </select>
+            </div>
+          </div>
+          <div class="np-confirm-actions np-add-member-actions">
+            <button
+              id="npModifyMemberCancelBtn"
+              class="np-secondary-btn"
+              type="button"
+            >
+              Cancel
+            </button>
+            <button id="npModifyMemberSaveBtn" class="np-primary-btn" type="button">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "unicollab_projects";
+
+      function loadProjects() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveProjects(nextProjects) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextProjects));
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const continueMode = params.get("continue") === "1";
+      const projectId = params.get("projectId");
+
+      const storedName = localStorage.getItem("unicollab_fullName") || "Student";
+      const storedSid = localStorage.getItem("unicollab_studentId") || "";
+
+      const membersListEl = document.getElementById("npMembersList");
+
+      const closeXBtn = document.getElementById("npCloseX2");
+      const addMemberBtn = document.getElementById("npAddMemberBtn");
+      const step2BackBtn = document.getElementById("npStep2BackBtn");
+      const step2NextBtn = document.getElementById("npStep2NextBtn");
+
+      // Close save/delete overlays
+      const closeConfirmOverlay2 = document.getElementById("npCloseConfirmOverlay2");
+      const closeDeleteConfirmOverlay2 = document.getElementById(
+        "npCloseDeleteConfirmOverlay2"
+      );
+      const closeSaveBtn2 = document.getElementById("npCloseSaveBtn2");
+      const closeDeleteBtn2 = document.getElementById("npCloseDeleteBtn2");
+      const closeDeleteYesBtn2 = document.getElementById(
+        "npCloseDeleteYesBtn2"
+      );
+      const closeDeleteNoBtn2 = document.getElementById("npCloseDeleteNoBtn2");
+
+      // Back save/delete overlays
+      const backConfirmOverlay2 = document.getElementById("npBackConfirmOverlay2");
+      const backDeleteConfirmOverlay2 = document.getElementById(
+        "npBackDeleteConfirmOverlay2"
+      );
+      const backSaveBtn2 = document.getElementById("npBackSaveBtn2");
+      const backDeleteBtn2 = document.getElementById("npBackDeleteBtn2");
+      const backDeleteYesBtn2 = document.getElementById("npBackDeleteYesBtn2");
+      const backDeleteNoBtn2 = document.getElementById("npBackDeleteNoBtn2");
+
+      // Add member modal
+      const addMemberOverlay = document.getElementById("npAddMemberOverlay");
+      const memberNameInput = document.getElementById("npMemberName");
+      const memberSidInput = document.getElementById("npMemberSid");
+      const memberRoleSelect = document.getElementById("npMemberRole");
+      const addMemberErrorEl = document.getElementById("npAddMemberError");
+      const addMemberCancelBtn = document.getElementById("npAddMemberCancelBtn");
+      const addMemberOkBtn = document.getElementById("npAddMemberOkBtn");
+
+      // Two members modal
+      const twoMembersOverlay = document.getElementById("npTwoMembersOverlay");
+      const twoMembersOkBtn = document.getElementById("npTwoMembersOkBtn");
+
+      const removeMemberOverlay = document.getElementById("npRemoveMemberOverlay");
+      const removeMemberYesBtn = document.getElementById("npRemoveMemberYesBtn");
+      const removeMemberNoBtn = document.getElementById("npRemoveMemberNoBtn");
+      const removeMemberTitleEl = document.getElementById("npRemoveMemberTitle");
+
+      const modifyMemberOverlay = document.getElementById("npModifyMemberOverlay");
+      const modifyMemberSummaryEl = document.getElementById("npModifyMemberSummary");
+      const modifyMemberRoleSelect = document.getElementById(
+        "npModifyMemberRoleSelect"
+      );
+      const modifyMemberCancelBtn = document.getElementById(
+        "npModifyMemberCancelBtn"
+      );
+      const modifyMemberSaveBtn = document.getElementById("npModifyMemberSaveBtn");
+
+      /** @type {string | null} */
+      let pendingRemoveMemberSid = null;
+      /** @type {string | null} */
+      let pendingModifyMemberSid = null;
+
+      let projects = loadProjects();
+      let project = projects.find((p) => p.id === projectId) || null;
+
+      if (!project) {
+        window.location.href = "./create-project.html";
+ throw new Error("navigation_redirect");
+      }
+
+      if (
+        Array.isArray(project.members) &&
+        project.members.length > 0 &&
+        storedSid &&
+        !project.members.some((m) => String(m.studentId) === String(storedSid))
+      ) {
+        window.location.replace("./dashboard.html");
+      }
+
+      // Ensure members array exists and current user is leader.
+      function normalizeMembers() {
+        if (!Array.isArray(project.members)) {
+          project.members = [];
+        }
+
+        // Ensure each member has a valid role.
+        project.members = project.members.map((m) => ({
+          ...m,
+          taskCount: typeof m.taskCount === "number" ? m.taskCount : 0,
+          role: m.role === "leader" ? "leader" : "member",
+        }));
+
+        // Ensure creator exists (auto-added) and defaults to leader initially.
+        const creatorIdx = project.members.findIndex(
+          (m) => String(m.studentId) === String(storedSid)
+        );
+        if (creatorIdx < 0) {
+          project.members.unshift({
+            fullName: storedName,
+            studentId: storedSid,
+            role: "leader",
+            taskCount: 0,
+          });
+        } else if (!project.members[creatorIdx].role) {
+          project.members[creatorIdx].role = "leader";
+        }
+
+        // Ensure at least one leader exists.
+        let leaderIdx = project.members.findIndex((m) => m.role === "leader");
+        if (leaderIdx < 0) {
+          leaderIdx = creatorIdx >= 0 ? creatorIdx : 0;
+          if (project.members[leaderIdx]) project.members[leaderIdx].role = "leader";
+        }
+
+        // Enforce single leader (keep the first leader, demote others).
+        leaderIdx = project.members.findIndex((m) => m.role === "leader");
+        if (leaderIdx >= 0) {
+          project.members = project.members.map((m, i) => ({
+            ...m,
+            role: i === leaderIdx ? "leader" : "member",
+          }));
+        }
+
+        project.membersCount = project.members.length;
+        const leader = project.members.find((m) => m.role === "leader");
+        project.leaderFullName = leader?.fullName || storedName;
+        project.leaderStudentId = leader?.studentId || storedSid;
+      }
+
+      function cleanupMemberSideEffects(removedSid) {
+        const s = String(removedSid);
+        if (
+          project.groupAgreement &&
+          typeof project.groupAgreement === "object"
+        ) {
+          delete project.groupAgreement[s];
+        }
+        if (String(project.creationFinalizerStudentId || "") === s) {
+          project.creationFinalizerStudentId = "";
+        }
+      }
+
+      function removeMemberBySid(sid) {
+        const s = String(sid);
+        if (!project.members || project.members.length <= 1) {
+          window.alert("The group must keep at least one member.");
+          return;
+        }
+        project.members = project.members.filter(
+          (m) => String(m.studentId) !== s
+        );
+        cleanupMemberSideEffects(s);
+        normalizeMembers();
+        saveProjects(projects.map((p) => (p.id === projectId ? project : p)));
+        renderMembers();
+        if (
+          storedSid &&
+          !project.members.some((m) => String(m.studentId) === String(storedSid))
+        ) {
+          window.location.replace("./dashboard.html");
+        }
+      }
+
+      function applyRoleChangeForSid(sid, newRole) {
+        const target = project.members.find(
+          (m) => String(m.studentId) === String(sid)
+        );
+        if (!target) return;
+        if (newRole === "leader") {
+          project.members = project.members.map((m) => ({
+            ...m,
+            role: String(m.studentId) === String(sid) ? "leader" : "member",
+          }));
+        } else {
+          const wasLeader = target.role === "leader";
+          target.role = "member";
+          if (wasLeader) {
+            const other = project.members.find(
+              (m) => String(m.studentId) !== String(sid)
+            );
+            if (other) other.role = "leader";
+          }
+        }
+        normalizeMembers();
+        saveProjects(projects.map((p) => (p.id === projectId ? project : p)));
+        renderMembers();
+      }
+
+      function renderMembers() {
+        membersListEl.innerHTML = "";
+
+        if (!project.members || project.members.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "np-members-empty";
+          empty.textContent = "No members yet.";
+          membersListEl.appendChild(empty);
+          return;
+        }
+
+        project.members.forEach((m) => {
+          const wrap = document.createElement("div");
+          wrap.className = "np-member-row-wrap";
+
+          const row = document.createElement("div");
+          row.className = "np-member-row";
+
+          const roleText = m.role === "leader" ? "Leader" : "Member";
+          row.innerHTML = `
+            <div class="np-member-col np-member-name">${m.fullName}</div>
+            <div class="np-member-col np-member-sid">${m.studentId}</div>
+            <div class="np-member-col np-member-role">${roleText}</div>
+          `;
+
+          const pop = document.createElement("div");
+          pop.className = "np-member-hover-pop";
+          pop.setAttribute("role", "group");
+          pop.setAttribute("aria-label", "Member actions");
+
+          const modBtn = document.createElement("button");
+          modBtn.type = "button";
+          modBtn.className = "np-member-act-btn np-member-act-modify";
+          modBtn.textContent = "Modify";
+          modBtn.dataset.studentId = String(m.studentId);
+
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "np-member-act-btn np-member-act-delete";
+          delBtn.textContent = "Delete";
+          delBtn.dataset.studentId = String(m.studentId);
+
+          pop.appendChild(modBtn);
+          pop.appendChild(delBtn);
+          wrap.appendChild(row);
+          wrap.appendChild(pop);
+          membersListEl.appendChild(wrap);
+        });
+      }
+
+      normalizeMembers();
+      renderMembers();
+
+      function openOverlay(el) {
+        el.hidden = false;
+      }
+      function closeOverlay(el) {
+        el.hidden = true;
+      }
+
+      // Close X -> save/delete group
+      closeXBtn.addEventListener("click", function () {
+        closeOverlay(addMemberOverlay);
+        closeOverlay(backConfirmOverlay2);
+        closeOverlay(backDeleteConfirmOverlay2);
+        closeOverlay(closeDeleteConfirmOverlay2);
+        openOverlay(closeConfirmOverlay2);
+      });
+
+      closeDeleteBtn2.addEventListener("click", function () {
+        closeOverlay(closeConfirmOverlay2);
+        openOverlay(closeDeleteConfirmOverlay2);
+      });
+
+      closeDeleteNoBtn2.addEventListener("click", function () {
+        closeOverlay(closeDeleteConfirmOverlay2);
+        openOverlay(closeConfirmOverlay2);
+      });
+
+      closeDeleteYesBtn2.addEventListener("click", function () {
+        projects = projects.filter((p) => p.id !== projectId);
+        saveProjects(projects);
+        closeOverlay(closeDeleteConfirmOverlay2);
+        window.location.href = "./dashboard.html";
+      });
+
+      closeSaveBtn2.addEventListener("click", function () {
+        normalizeMembers();
+        project.status = "pending";
+        project.draftStep = 2;
+        saveProjects(
+          projects.map((p) => (p.id === projectId ? project : p))
+        );
+        closeOverlay(closeConfirmOverlay2);
+        window.location.href = "./dashboard.html";
+      });
+
+      closeConfirmOverlay2.addEventListener("click", function (e) {
+        if (e.target === closeConfirmOverlay2) closeOverlay(closeConfirmOverlay2);
+      });
+      closeDeleteConfirmOverlay2.addEventListener("click", function (e) {
+        if (e.target === closeDeleteConfirmOverlay2) {
+          closeOverlay(closeDeleteConfirmOverlay2);
+          openOverlay(closeConfirmOverlay2);
+        }
+      });
+
+      // Back -> save/delete this page info
+      step2BackBtn.addEventListener("click", function () {
+        closeOverlay(addMemberOverlay);
+        closeOverlay(closeConfirmOverlay2);
+        closeOverlay(closeDeleteConfirmOverlay2);
+        closeOverlay(backDeleteConfirmOverlay2);
+        openOverlay(backConfirmOverlay2);
+      });
+
+      backDeleteBtn2.addEventListener("click", function () {
+        closeOverlay(backConfirmOverlay2);
+        openOverlay(backDeleteConfirmOverlay2);
+      });
+
+      backDeleteNoBtn2.addEventListener("click", function () {
+        closeOverlay(backDeleteConfirmOverlay2);
+        openOverlay(backConfirmOverlay2);
+      });
+
+      backDeleteYesBtn2.addEventListener("click", function () {
+        // Keep only leader (current user) and reset to Page 1.
+        project.members = [
+          {
+            fullName: storedName,
+            studentId: storedSid,
+            role: "leader",
+          },
+        ];
+        project.membersCount = 1;
+        project.draftStep = 1;
+        saveProjects(projects.map((p) => (p.id === projectId ? project : p)));
+
+        closeOverlay(backDeleteConfirmOverlay2);
+        window.location.href = `./create-project.html?continue=1&projectId=${encodeURIComponent(
+          projectId
+        )}&step=1`;
+      });
+
+      backSaveBtn2.addEventListener("click", function () {
+        normalizeMembers();
+        project.status = "pending";
+        project.draftStep = 2;
+        saveProjects(projects.map((p) => (p.id === projectId ? project : p)));
+
+        closeOverlay(backConfirmOverlay2);
+        // Redirect back to Page 1 UI, but keep draftStep=2 for next time continuation.
+        window.location.href = `./create-project.html?continue=1&projectId=${encodeURIComponent(
+          projectId
+        )}&step=1`;
+      });
+
+      backConfirmOverlay2.addEventListener("click", function (e) {
+        if (e.target === backConfirmOverlay2) closeOverlay(backConfirmOverlay2);
+      });
+      backDeleteConfirmOverlay2.addEventListener("click", function (e) {
+        if (e.target === backDeleteConfirmOverlay2) {
+          closeOverlay(backDeleteConfirmOverlay2);
+          openOverlay(backConfirmOverlay2);
+        }
+      });
+
+      // Add member modal logic
+      addMemberBtn.addEventListener("click", function () {
+        addMemberErrorEl.hidden = true;
+        memberNameInput.value = "";
+        memberSidInput.value = "";
+        openOverlay(addMemberOverlay);
+      });
+
+      addMemberCancelBtn.addEventListener("click", function () {
+        closeOverlay(addMemberOverlay);
+      });
+
+      async function fetchUserBySid(sid) {
+        const url = `/user?studentId=${encodeURIComponent(
+          sid
+        )}`;
+        const response = await fetch(url, { method: "GET" });
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (!data || !data.success || !data.user) return null;
+        return data.user;
+      }
+
+      addMemberOkBtn.addEventListener("click", async function () {
+        const name = memberNameInput.value.trim(); // optional; we validate by SID
+        const sid = memberSidInput.value.trim();
+        const roleChoice = memberRoleSelect ? memberRoleSelect.value : "";
+        const desiredRole = roleChoice === "leader" ? "leader" : "member";
+
+        if (!sid) return;
+
+        let matchedUser = null;
+        try {
+          matchedUser = await fetchUserBySid(sid);
+        } catch (e) {
+          matchedUser = null;
+        }
+
+        if (!matchedUser) {
+          addMemberErrorEl.hidden = false;
+          return;
+        }
+
+        // Prevent duplicates by studentId
+        const exists = project.members.some(
+          (m) => String(m.studentId) === String(sid)
+        );
+        if (!exists) {
+          if (desiredRole === "leader") {
+            // If the new member is chosen as leader, demote current leaders.
+            project.members = project.members.map((m) => ({
+              ...m,
+              role: "member",
+            }));
+          }
+
+          project.members.push({
+            fullName: matchedUser.fullName,
+            studentId: matchedUser.studentId,
+            role: desiredRole,
+            taskCount: 0,
+          });
+        }
+
+        normalizeMembers();
+        renderMembers();
+        closeOverlay(addMemberOverlay);
+      });
+
+      addMemberOverlay.addEventListener("click", function (e) {
+        if (e.target === addMemberOverlay) closeOverlay(addMemberOverlay);
+      });
+
+      // Next -> require at least 2 members
+      step2NextBtn.addEventListener("click", function () {
+        normalizeMembers();
+
+        if (!project.members || project.members.length < 2) {
+          openOverlay(twoMembersOverlay);
+          return;
+        }
+
+        project.status = "pending";
+        project.draftStep = 3;
+        saveProjects(projects.map((p) => (p.id === projectId ? project : p)));
+
+        closeOverlay(twoMembersOverlay);
+        window.location.href = `./create-project-step3.html?continue=1&projectId=${encodeURIComponent(
+          projectId
+        )}&step=3`;
+      });
+
+      twoMembersOkBtn.addEventListener("click", function () {
+        closeOverlay(twoMembersOverlay);
+      });
+
+      membersListEl.addEventListener("click", function (e) {
+        const modBtn = e.target.closest(".np-member-act-modify");
+        const delBtn = e.target.closest(".np-member-act-delete");
+        if (modBtn && modBtn.dataset.studentId) {
+          pendingModifyMemberSid = modBtn.dataset.studentId;
+          const mem = project.members.find(
+            (m) => String(m.studentId) === String(pendingModifyMemberSid)
+          );
+          modifyMemberSummaryEl.textContent = mem
+            ? `${mem.fullName || "Member"} (${mem.studentId})`
+            : "";
+          modifyMemberRoleSelect.value =
+            mem && mem.role === "leader" ? "leader" : "member";
+          openOverlay(modifyMemberOverlay);
+          return;
+        }
+        if (delBtn && delBtn.dataset.studentId) {
+          pendingRemoveMemberSid = delBtn.dataset.studentId;
+          const mem = project.members.find(
+            (m) => String(m.studentId) === String(pendingRemoveMemberSid)
+          );
+          removeMemberTitleEl.textContent = mem
+            ? `Remove ${mem.fullName || "this member"} from the group?`
+            : "Remove this member from the group?";
+          openOverlay(removeMemberOverlay);
+        }
+      });
+
+      removeMemberNoBtn.addEventListener("click", function () {
+        pendingRemoveMemberSid = null;
+        closeOverlay(removeMemberOverlay);
+      });
+
+      removeMemberYesBtn.addEventListener("click", function () {
+        if (pendingRemoveMemberSid)
+          removeMemberBySid(pendingRemoveMemberSid);
+        pendingRemoveMemberSid = null;
+        closeOverlay(removeMemberOverlay);
+      });
+
+      removeMemberOverlay.addEventListener("click", function (e) {
+        if (e.target === removeMemberOverlay) {
+          pendingRemoveMemberSid = null;
+          closeOverlay(removeMemberOverlay);
+        }
+      });
+
+      modifyMemberCancelBtn.addEventListener("click", function () {
+        pendingModifyMemberSid = null;
+        closeOverlay(modifyMemberOverlay);
+      });
+
+      modifyMemberOverlay.addEventListener("click", function (e) {
+        if (e.target === modifyMemberOverlay) {
+          pendingModifyMemberSid = null;
+          closeOverlay(modifyMemberOverlay);
+        }
+      });
+
+      modifyMemberSaveBtn.addEventListener("click", function () {
+        if (!pendingModifyMemberSid) return;
+        const nextRole =
+          modifyMemberRoleSelect.value === "leader" ? "leader" : "member";
+        applyRoleChangeForSid(pendingModifyMemberSid, nextRole);
+        pendingModifyMemberSid = null;
+        closeOverlay(modifyMemberOverlay);
+      });
+    </script>
+    <script>
+      try {
+        const theme = localStorage.getItem("unicollab_theme") || "day";
+        document.body.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </body>
+</html>
+
